@@ -74,8 +74,9 @@ int main(int argc, char **argv) {
   cout << "List of resolved hosts is:\n";
   cout << "==========================\n";
   auto hosts = parser.hosts();
-  auto process_host = Parser::Host();
-  auto receiver_host = Parser::Host();
+  std::string init_ip = "127.0.0.1";
+  auto process_host = Parser::Host((unsigned long)0, init_ip, (unsigned short)0);
+  auto receiver_host = Parser::Host((unsigned long)0, init_ip, (unsigned short)0);
   for (auto &host : hosts) {
     cout << host.id << "\n";
     cout << "Human-readable IP: " << host.ipReadable() << "\n";
