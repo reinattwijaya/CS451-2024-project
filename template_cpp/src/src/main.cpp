@@ -143,6 +143,7 @@ int main(int argc, char **argv) {
     receiver_sa.sin_addr.s_addr = receiver_host.ip;
     receiver_sa.sin_port = receiver_host.port;
 
+    fd_set socks;
     unsigned long count = 0;
     // while (count < numberOfMessagesSenderNeedToSend)
     // this while might be useful for threading purposes
@@ -156,11 +157,11 @@ int main(int argc, char **argv) {
         sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
         while(true){
 
-          fd_set socks;
           struct timeval t;
           FD_ZERO(&socks);
           FD_SET(sockfd, &socks);
-          t.tv_sec = 5;
+          t.tv_sec = 1;
+          t.tv_usec = 0;
 
           int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
           if(select_result == 0){
@@ -190,11 +191,11 @@ int main(int argc, char **argv) {
       sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
       while(true){
 
-        fd_set socks;
         struct timeval t;
         FD_ZERO(&socks);
         FD_SET(sockfd, &socks);
         t.tv_sec = 1;
+        t.tv_usec = 0;
 
         int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
         if(select_result == 0){
