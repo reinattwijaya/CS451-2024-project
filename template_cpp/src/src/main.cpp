@@ -152,6 +152,7 @@ int main(int argc, char **argv) {
     for(unsigned long i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
       message += "b " + std::to_string(i) + "\n";
       if (i % 8 == 0){
+        outputFile << message;
         std::string message_to_send = std::to_string(counter) + " " + message;
         counter++;
         sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
@@ -178,7 +179,6 @@ int main(int argc, char **argv) {
         buffer[n] = '\0';
         if(strcmp("ACK",buffer) == 0){
           cout << "Message sent" << endl;
-          outputFile << message;
           count += 8;
         }
 
