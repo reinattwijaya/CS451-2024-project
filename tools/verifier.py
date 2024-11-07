@@ -35,14 +35,8 @@ for i in range(2, N+1):
             if line[0] != 'b':
                 print("Error in proc" + int_to_str(i) + ".output" + "FIRST LINE IS NOT b")
                 sys.exit(1)
-            
             all_messages[line[1]] = True
-    count = 0
-    print(len(all_messages))
     for msg in all_map[i]:
-        count = count + 1
-        if(count % 1000000 == 0):
-            print("Processed", count, "messages")
         if msg not in all_messages:
             print("Error in proc" + int_to_str(i) + ".output" + "THE MESSAGE IS NOT BROADCASTED" + msg)
             sys.exit(1)
