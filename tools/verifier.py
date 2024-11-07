@@ -21,7 +21,10 @@ with open(file_loc + "proc01.output", "r") as f:
         
         process_id = int(line[1])
         process_message = line[2]
-        all_map[process_id] = process_message
+        if process_id not in all_map:
+            all_map[process_id] = [process_message]
+        else:
+            all_map[process_id].append(process_message)
 
 for i in range(2, N+1):
     all_messages = []
