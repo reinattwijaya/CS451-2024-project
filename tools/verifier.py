@@ -36,7 +36,7 @@ for i in range(2, N+1):
             all_messages.append(line[1])
     for msg in all_map[i]:
         if msg not in all_messages:
-            print("Error in proc" + int_to_str(i) + ".output" + "THE MESSAGE IS NOT BROADCASTED")
+            print("Error in proc" + int_to_str(i) + ".output" + "THE MESSAGE IS NOT BROADCASTED" + msg)
             sys.exit(1)
 
 print("Everything is correct!")
