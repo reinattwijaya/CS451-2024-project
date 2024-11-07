@@ -16,7 +16,7 @@ with open(file_loc + "proc01.output", "r") as f:
     for line in lines:
         line = line.split(' ')
         if line[0] != 'd':
-            print("Error in proc" + int_to_str(i) + ".output")
+            print("Error in proc" + int_to_str(i) + ".output" + ": FIRST LINE IS NOT d")
             sys.exit(1)
         
         process_id = int(line[1])
@@ -30,13 +30,13 @@ for i in range(2, N+1):
         for line in lines:
             line = line.split(' ')
             if line[0] != 'b':
-                print("Error in proc" + int_to_str(i) + ".output")
+                print("Error in proc" + int_to_str(i) + ".output" + "FIRST LINE IS NOT b")
                 sys.exit(1)
             
             all_messages.append(line[1])
     for msg in all_map[i]:
         if msg not in all_messages:
-            print("Error in proc" + int_to_str(i) + ".output")
+            print("Error in proc" + int_to_str(i) + ".output" + "THE MESSAGE IS NOT BROADCASTED")
             sys.exit(1)
 
 print("Everything is correct!")
