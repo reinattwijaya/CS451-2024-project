@@ -27,7 +27,7 @@ with open(file_loc + "proc01.output", "r") as f:
             all_map[process_id].append(process_message)
 
 for i in range(2, N+1):
-    all_messages = []
+    all_messages = {}
     with open(file_loc + "proc" + int_to_str(i) + ".output", "r") as f:
         lines = f.readlines()
         for line in lines:
@@ -36,7 +36,7 @@ for i in range(2, N+1):
                 print("Error in proc" + int_to_str(i) + ".output" + "FIRST LINE IS NOT b")
                 sys.exit(1)
             
-            all_messages.append(line[1])
+            all_messages[line[1]] = True
     count = 0
     print(len(all_messages))
     for msg in all_map[i]:
