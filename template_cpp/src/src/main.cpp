@@ -177,10 +177,8 @@ int main(int argc, char **argv) {
 
         n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
         buffer[n] = '\0';
-        if(strcmp("ACK",buffer) == 0){
-          cout << "Message sent" << endl;
+        if(strcmp("ACK",buffer) == 0)
           count += 8;
-        }
 
         message = "";
       }
@@ -212,58 +210,86 @@ int main(int argc, char **argv) {
       n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
       buffer[n] = '\0';
       if(strcmp("ACK",buffer) == 0){
-        cout << "Message sent" << endl;
         outputFile << message;
         count += 8;
       }
     }
 
-  }
+  }else{
+    //receiver
+    while (true) {
+      //wait to receive and deliver the messages
 
-  // After a process finishes broadcasting,
-  // it waits forever for the delivery of messages.
-  while (true) {
-    //wait to receive and deliver the messages
+      // std::this_thread::sleep_for(std::chrono::hours(1));
 
-    // std::this_thread::sleep_for(std::chrono::hours(1));
-
-    n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
-    buffer[n] = '\0';
-    std::pair<std::string, unsigned short> hostKey(inet_ntoa(sender_sa.sin_addr), ntohs(sender_sa.sin_port));
-    auto it = hostMap.find(hostKey);
-    if(it != hostMap.end()){
-      // make the message to the delivered version, use string since it's easier
-      unsigned long i = 0;
-      std::string message_id_str = "";
-      while(buffer[i] != ' '){
-        message_id_str += buffer[i];
-        i++;
-      }
-      unsigned long message_id = std::stoul(message_id_str);
-      if(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
-        // sendto(sockfd, "ACK", sizeof("ACK"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
-        continue;
-      }
-
-      std::string message_to_deliver = "";
-      for(; i < strlen(buffer); i++){
-        if (buffer[i] == 'b'){
-          message_to_deliver += "d " + std::to_string(it->second) + " ";
-          for(i+=2; i < strlen(buffer) && buffer[i] != '\n'; i++){
-            message_to_deliver += buffer[i];
-          }
-          message_to_deliver += '\n';
+      n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
+      buffer[n] = '\0';
+      std::pair<std::string, unsigned short> hostKey(inet_ntoa(sender_sa.sin_addr), ntohs(sender_sa.sin_port));
+      auto it = hostMap.find(hostKey);
+      if(it != hostMap.end()){
+        // make the message to the delivered version, use string since it's easier
+        unsigned long i = 0;
+        std::string message_id_str = "";
+        while(buffer[i] != ' '){
+          message_id_str += buffer[i];
+          i++;
         }
-      }
-      messageMap[std::make_pair(it->second, message_id)] = true;
-      outputFile << message_to_deliver;
+        unsigned long message_id = std::stoul(message_id_str);
+        if(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
+          // sendto(sockfd, "ACK", sizeof("ACK"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+          continue;
+        }
 
-    }else{
-      perror("host not found");
+        std::string message_to_deliver = "";
+        for(; i < strlen(buffer); i++){
+          if (buffer[i] == 'b'){
+            message_to_deliver += "d " + std::to_string(it->second) + " ";
+            for(i+=2; i < strlen(buffer) && buffer[i] != '\n'; i++){
+              message_to_deliver += buffer[i];
+            }
+            message_to_deliver += '\n';
+          }
+        }
+        messageMap[std::make_pair(it->second, message_id)] = true;
+        outputFile << message_to_deliver;
+
+      }else{
+        perror("host not found");
+      }
+      sendto(sockfd, "ACK", sizeof("ACK"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+      // cout << inet_ntoa(sender_sa.sin_addr) << ' ' << sender_sa.sin_port << endl;
     }
-    sendto(sockfd, "ACK", sizeof("ACK"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
-    // cout << inet_ntoa(sender_sa.sin_addr) << ' ' << sender_sa.sin_port << endl;
   }
 
   return 0;
 }
+
+
+
+/*
+current algorithm: 
+SENDER
+1. loop over all the messages need to be sent
+2. every 8 messages, keep sending the messages until you get the ACK from the receiver
+3. if you get the ACK, then loop back up
+
+RECEIVER
+1. wait for the message from the sender
+2. get the host id from the ip and port information
+3. check the message id, if it is already received, then ignore
+4. if it is not received, then deliver the message -> loop through all the messages and put it into the string
+5. loop back up and wait for the next message
+
+NEW algorithm:
+SENDER
+1. loop over all the messages need to be sent
+2. keep sending x messages until the end of the message (x needs to be experimented on)
+3. at the end of the loop, recvmmsg the ACK you get from the receiver, decode it and acknowledge it in the map
+4. loop back up and send message that hasn't receive the ACK
+
+RECEIVER
+1. recvmmsg the messages from the sender
+2. make a thread for the recvmmsg that you have received to deliver the message (distinction between receiving message and delivering)
+3. deliver the message that hasn't been delivered based on host and message id
+
+*/
