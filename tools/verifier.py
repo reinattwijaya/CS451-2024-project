@@ -4,7 +4,7 @@ file_loc = "../example/stress_tests/"
 N = int(sys.argv[1])
 
 def int_to_str(i):
-    if i < 10 and N < 100:
+    if i < 10:
         return "0" + str(i)
     return str(i)
 
