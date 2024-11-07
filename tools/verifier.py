@@ -28,6 +28,7 @@ with open(file_loc + "proc01.output", "r") as f:
 
 for i in range(2, N+1):
     all_messages = []
+    print(i)
     with open(file_loc + "proc" + int_to_str(i) + ".output", "r") as f:
         lines = f.readlines()
         for line in lines:
