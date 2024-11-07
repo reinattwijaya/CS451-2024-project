@@ -38,6 +38,7 @@ for i in range(2, N+1):
             
             all_messages.append(line[1])
     count = 0
+    print(len(all_messages))
     for msg in all_map[i]:
         count = count + 1
         if(count % 1000000 == 0):
