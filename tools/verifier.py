@@ -28,7 +28,6 @@ with open(file_loc + "proc01.output", "r") as f:
 
 for i in range(2, N+1):
     all_messages = []
-    print(i)
     with open(file_loc + "proc" + int_to_str(i) + ".output", "r") as f:
         lines = f.readlines()
         for line in lines:
@@ -38,10 +37,15 @@ for i in range(2, N+1):
                 sys.exit(1)
             
             all_messages.append(line[1])
+    count = 0
     for msg in all_map[i]:
+        count = count + 1
+        if(count % 1000000 == 0):
+            print("Processed", count, "messages")
         if msg not in all_messages:
             print("Error in proc" + int_to_str(i) + ".output" + "THE MESSAGE IS NOT BROADCASTED" + msg)
             sys.exit(1)
+    print(i, "has sent", len(all_map[i]))
 
 print("Everything is correct!")
 
