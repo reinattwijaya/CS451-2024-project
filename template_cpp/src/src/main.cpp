@@ -142,76 +142,53 @@ int main(int argc, char **argv) {
     receiver_sa.sin_family = AF_INET;
     receiver_sa.sin_addr.s_addr = receiver_host.ip;
     receiver_sa.sin_port = receiver_host.port;
-
     fd_set socks;
-    unsigned long count = 0;
-    // while (count < numberOfMessagesSenderNeedToSend)
-    // this while might be useful for threading purposes
-    std::string message = "";
-    unsigned long counter = 1;
-    for(unsigned long i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
-      message += "b " + std::to_string(i) + "\n";
-      if (i % 8 == 0){
-        outputFile << message;
+    //not sure if this is needed as an abstraction
+    std::map<std::string, bool> messagesSent;
+
+    while(true){
+
+      std::string message = "";
+      unsigned long counter = 1;
+
+      for(unsigned long i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
+        if(messagesSent[std::to_string(counter)])
+          continue;
+        message += "b " + std::to_string(i) + "\n";
+        if (i % 8 == 0){
+          outputFile << message;
+          std::string message_to_send = std::to_string(counter) + " " + message;
+          counter++;
+          sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
+          message = "";
+        }
+      }
+      if(message != ""){
         std::string message_to_send = std::to_string(counter) + " " + message;
         counter++;
         sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
-        while(true){
-
-          struct timeval t;
-          FD_ZERO(&socks);
-          FD_SET(sockfd, &socks);
-          t.tv_sec = 1;
-          t.tv_usec = 0;
-
-          int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
-          if(select_result == 0){
-            sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
-          }else if(select_result < 0){
-            perror("select failed");
-            break;
-          }else{
-            break;
-          }
-        }
-
-        n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
-        buffer[n] = '\0';
-        if(strcmp("ACK",buffer) == 0)
-          count += 8;
-
-        message = "";
       }
-    }
-    if(message != ""){
-      std::string message_to_send = std::to_string(counter) + " " + message;
-      counter++;
-      sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
+
+      struct timeval t;
+      FD_ZERO(&socks);
+      FD_SET(sockfd, &socks);
+      t.tv_sec = 0;
+      t.tv_usec = 500000;
+
+      //now we get all the ACK in the buffer
       while(true){
-
-        struct timeval t;
-        FD_ZERO(&socks);
-        FD_SET(sockfd, &socks);
-        t.tv_sec = 1;
-        t.tv_usec = 0;
-
         int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
-        if(select_result == 0){
-          sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
+        cout << select_result << endl;
+        if (select_result == 0){
+          break;
         }else if(select_result < 0){
           perror("select failed");
-          break;
-        }else{
-          break;
+          exit(EXIT_FAILURE);
         }
-
-      }
-
-      n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
-      buffer[n] = '\0';
-      if(strcmp("ACK",buffer) == 0){
-        outputFile << message;
-        count += 8;
+        n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
+        std::string ack = buffer;
+        cout << ack << endl;
+        messagesSent[ack] = true;
       }
     }
 
@@ -252,11 +229,12 @@ int main(int argc, char **argv) {
         }
         messageMap[std::make_pair(it->second, message_id)] = true;
         outputFile << message_to_deliver;
+        cout << message_id_str << endl;
+        sendto(sockfd, message_id_str.c_str(), sizeof(message_id_str), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
 
       }else{
         perror("host not found");
       }
-      sendto(sockfd, "ACK", sizeof("ACK"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
       // cout << inet_ntoa(sender_sa.sin_addr) << ' ' << sender_sa.sin_port << endl;
     }
   }
