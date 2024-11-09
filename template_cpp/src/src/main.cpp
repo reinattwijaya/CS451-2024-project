@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
           perror("select failed");
           exit(EXIT_FAILURE);
         }
-        n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
+        n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_DONTWAIT, reinterpret_cast<sockaddr*>(&sender_sa), &len);
         std::string ack = buffer;
         cout << ack << endl;
         messagesSent[ack] = true;
