@@ -16,7 +16,7 @@ with open(file_loc + "proc01.output", "r") as f:
     for line in lines:
         line = line.split(' ')
         if line[0] != 'd':
-            print("Error in proc" + int_to_str(i) + ".output" + ": FIRST LINE IS NOT d")
+            print("Error in proc01"+ ".output" + ": FIRST LINE IS NOT d")
             sys.exit(1)
         
         process_id = int(line[1])
@@ -26,7 +26,7 @@ with open(file_loc + "proc01.output", "r") as f:
             all_map[process_id][process_message] = True
         else:
             if process_message in all_map[process_id]:
-                print("Error in proc" + int_to_str(i) + ".output" + ": DUPLICATE MESSAGE")
+                print("Error in proc01" + ".output" + ": DUPLICATE MESSAGE")
                 sys.exit(1)
             all_map[process_id][process_message] = True
 
