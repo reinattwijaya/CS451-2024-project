@@ -251,7 +251,9 @@ int main(int argc, char **argv) {
         }
         unsigned long message_id = std::stoul(message_id_str);
         if(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
-          sendto(sockfd, "0", sizeof("0"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+          std::string send_buffer = std::to_string(processes_highest_ack[it->second]);
+          cout << send_buffer << endl;
+          sendto(sockfd, send_buffer.c_str(), send_buffer.length(), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
           continue;
         }
 
