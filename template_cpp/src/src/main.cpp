@@ -226,6 +226,7 @@ int main(int argc, char **argv) {
       }else{
         perror("host not found");
       }
+      cout << "SENDING" << endl;
       sendto(sockfd, "0", sizeof("0"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
       // cout << inet_ntoa(sender_sa.sin_addr) << ' ' << sender_sa.sin_port << endl;
     }
