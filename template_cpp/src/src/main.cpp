@@ -212,6 +212,7 @@ int main(int argc, char **argv) {
       }
 
       n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
+      buffer[n] = '\0';
     }
 
   }else{
