@@ -148,7 +148,6 @@ int main(int argc, char **argv) {
     unsigned long counter = 1;
     for(unsigned long i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
       message += std::to_string(i) + "\n";
-      cout << i << endl;
       if (i % 8 == 0 || i == numberOfMessagesSenderNeedToSend){
         std::string outputMessage = "";
         for(unsigned int i = 0; i < message.length(); i ++){
@@ -208,7 +207,7 @@ int main(int argc, char **argv) {
         }
         unsigned long message_id = std::stoul(message_id_str);
         if(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
-          // sendto(sockfd, "ACK", sizeof("ACK"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+          sendto(sockfd, "0", sizeof("0"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
           continue;
         }
 
