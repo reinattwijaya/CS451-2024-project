@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
       message += std::to_string(i) + "\n";
       if (i % 8 == 0){
         std::string outputMessage = "";
-        for(int i = 0; i < message.length(); i ++){
+        for(unsigned int i = 0; i < message.length(); i ++){
           outputMessage += "b " + message[i];
         }
         outputFile << outputMessage;
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
     }
     if(message != ""){
       std::string outputMessage = "";
-      for(int i = 0; i < message.length(); i ++){
+      for(unsigned int i = 0; i < message.length(); i ++){
         outputMessage += "b " + message[i];
       }
       outputFile << outputMessage;
