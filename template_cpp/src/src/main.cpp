@@ -183,6 +183,11 @@ int main(int argc, char **argv) {
       }
     }
     if(message != ""){
+      std::string outputMessage = "";
+      for(int i = 0; i < message.length(); i ++){
+        outputMessage += "b " + message[i];
+      }
+      outputFile << outputMessage;
       std::string message_to_send = std::to_string(counter) + " " + message;
       counter++;
       sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
