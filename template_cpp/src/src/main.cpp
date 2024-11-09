@@ -214,7 +214,6 @@ int main(int argc, char **argv) {
             }else{
               n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
               buffer[n] = '\0';
-              cout << buffer << endl;
               highest_ack = std::stoul(buffer);
               if(highest_ack >= current_batch*BATCH_SIZE || highest_ack*8 >= numberOfMessagesSenderNeedToSend){
                 break;
@@ -252,7 +251,6 @@ int main(int argc, char **argv) {
         unsigned long message_id = std::stoul(message_id_str);
         if(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
           std::string send_buffer = std::to_string(processes_highest_ack[it->second]);
-          cout << send_buffer << endl;
           sendto(sockfd, send_buffer.c_str(), send_buffer.length(), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
           continue;
         }
@@ -267,20 +265,20 @@ int main(int argc, char **argv) {
         }
         messageMap[std::make_pair(it->second, message_id)] = true;
         outputFile << message_to_deliver;
-        cout << message_id << endl;
         if(processes_highest_ack[it->second]+1 == message_id){
-          message_id++;
-          while(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
-            message_id++;
+          unsigned long cur_message_id = message_id+1;
+          while(messageMap.find(std::make_pair(it->second, cur_message_id)) != messageMap.end()){
+            cur_message_id++;
           }
-          processes_highest_ack[it->second] = message_id-1;
+          processes_highest_ack[it->second] = cur_message_id-1;
+        }
+        if(message_id % BATCH_SIZE == 0){
+          std::string send_buffer = std::to_string(processes_highest_ack[it->second]);
+          sendto(sockfd, send_buffer.c_str(), send_buffer.length(), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
         }
       }else{
         perror("host not found");
       }
-      std::string send_buffer = std::to_string(processes_highest_ack[it->second]);
-      cout << send_buffer << endl;
-      sendto(sockfd, send_buffer.c_str(), send_buffer.length(), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
       // cout << inet_ntoa(sender_sa.sin_addr) << ' ' << sender_sa.sin_port << endl;
     }
   }
