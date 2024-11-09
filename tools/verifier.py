@@ -24,6 +24,9 @@ with open(file_loc + "proc01.output", "r") as f:
         if process_id not in all_map:
             all_map[process_id] = [process_message]
         else:
+            if process_message in all_map[process_id]:
+                print("Error in proc" + int_to_str(i) + ".output" + ": DUPLICATE MESSAGE")
+                sys.exit(1)
             all_map[process_id].append(process_message)
 
 for i in range(2, N+1):
