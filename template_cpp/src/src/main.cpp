@@ -169,6 +169,9 @@ int main(int argc, char **argv) {
           if(select_result == 0){
             sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
           }else if(select_result < 0){
+            if(EINTR == errno){
+              perror("HAHAHAHAHAHAHHAHAHA");
+            }
             perror("select failed");
             exit(EXIT_FAILURE);
           }else{
@@ -203,6 +206,9 @@ int main(int argc, char **argv) {
         if(select_result == 0){
           sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
         }else if(select_result < 0){
+          if(EINTR == errno){
+            perror("HAHAHAHAHAHAHHAHAHA");
+          }
           perror("select failed");
           exit(EXIT_FAILURE);
         }else{
