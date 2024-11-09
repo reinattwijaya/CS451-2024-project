@@ -26,7 +26,7 @@ with open(file_loc + "proc01.output", "r") as f:
             all_map[process_id][process_message] = True
         else:
             if process_message in all_map[process_id]:
-                print("Error in proc01" + ".output" + ": DUPLICATE MESSAGE")
+                print("Error in proc01" + ".output" + ": DUPLICATE MESSAGE: " + process_message)
                 sys.exit(1)
             all_map[process_id][process_message] = True
 
