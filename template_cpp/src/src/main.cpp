@@ -41,6 +41,9 @@ int main(int argc, char **argv) {
   signal(SIGTERM, stop);
   signal(SIGINT, stop);
 
+  const int BATCH_SIZE = 8;
+  const int MSG_PER_SEND = 8;
+
   // `true` means that a config file is required.
   // Call with `false` if no config file is necessary.
   bool requireConfig = false;
@@ -146,9 +149,11 @@ int main(int argc, char **argv) {
     fd_set socks;
     std::string message = "";
     unsigned long counter = 1;
+    unsigned long current_batch = 1;
     for(unsigned long i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
+      //assuming we have an array of messages, the abstraction is still in the string
       message += std::to_string(i) + "\n";
-      if (i % 8 == 0 || i == numberOfMessagesSenderNeedToSend){
+      if (i % MSG_PER_SEND == 0 || i == numberOfMessagesSenderNeedToSend){
         std::string outputMessage = "";
         for(unsigned int i = 0; i < message.length(); i ++){
           std::string tempString = "";
@@ -159,34 +164,73 @@ int main(int argc, char **argv) {
         outputFile << outputMessage;
         std::string message_to_send = std::to_string(counter) + " " + message;
         counter++;
-        sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
-        while(true){
+        sendto(sockfd, message_to_send.c_str(), message_to_send.length(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
+        // while(true){
 
+        //   struct timeval t;
+        //   FD_ZERO(&socks);
+        //   FD_SET(sockfd, &socks);
+        //   t.tv_sec = 1;
+        //   t.tv_usec = 0;
+
+        //   int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
+        //   if(select_result == 0){
+        //     sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
+        //   }else if(select_result < 0){
+        //     perror("select failed");
+        //     break;
+        //   }else{
+        //     break;
+        //   }
+        // }
+
+        // n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
+        // buffer[n] = '\0';
+
+        if(i % (BATCH_SIZE*MSG_PER_SEND) == 0 || i == numberOfMessagesSenderNeedToSend){
+          unsigned long highest_ack = 0;
           struct timeval t;
           FD_ZERO(&socks);
           FD_SET(sockfd, &socks);
           t.tv_sec = 1;
           t.tv_usec = 0;
-
-          int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
-          if(select_result == 0){
-            sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
-          }else if(select_result < 0){
-            perror("select failed");
-            break;
-          }else{
-            break;
+          while(true){
+            int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
+            if(select_result == 0){
+              //since the abstraction provides the message string in array, this is still doable
+              std::string batch_fixing_message = "";
+              for(unsigned long j = highest_ack*MSG_PER_SEND+1; j <= current_batch*MSG_PER_SEND*BATCH_SIZE && j <= numberOfMessagesSenderNeedToSend; j ++){
+                batch_fixing_message += std::to_string(j) + "\n";
+                if(j % MSG_PER_SEND == 0 || j == numberOfMessagesSenderNeedToSend){
+                  unsigned long the_message_id = j/MSG_PER_SEND;
+                  std::string outputMessage = std::to_string(the_message_id) + " " + batch_fixing_message;
+                  sendto(sockfd, batch_fixing_message.c_str(), batch_fixing_message.length(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
+                  batch_fixing_message = "";
+                }
+              }
+            }else if(select_result < 0){
+              perror("select failed");
+              break;
+            }else{
+              n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
+              buffer[n] = '\0';
+              cout << buffer << endl;
+              highest_ack = std::stoul(buffer);
+              if(highest_ack >= current_batch*BATCH_SIZE || highest_ack*8 >= numberOfMessagesSenderNeedToSend){
+                break;
+              }
+            }
           }
+          current_batch++;
         }
-
-        n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
-        buffer[n] = '\0';
 
         message = "";
       }
     }
 
   }else{
+    unsigned long processes_highest_ack[200];
+    memset(processes_highest_ack, 0, sizeof(processes_highest_ack));
     //receiver
     while (true) {
       //wait to receive and deliver the messages
@@ -221,12 +265,20 @@ int main(int argc, char **argv) {
         }
         messageMap[std::make_pair(it->second, message_id)] = true;
         outputFile << message_to_deliver;
-
+        cout << message_id << endl;
+        if(processes_highest_ack[it->second]+1 == message_id){
+          message_id++;
+          while(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
+            message_id++;
+          }
+          processes_highest_ack[it->second] = message_id-1;
+        }
       }else{
         perror("host not found");
       }
-      cout << "SENDING" << endl;
-      sendto(sockfd, "0", sizeof("0"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+      std::string send_buffer = std::to_string(processes_highest_ack[it->second]);
+      cout << send_buffer << endl;
+      sendto(sockfd, send_buffer.c_str(), send_buffer.length(), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
       // cout << inet_ntoa(sender_sa.sin_addr) << ' ' << sender_sa.sin_port << endl;
     }
   }
