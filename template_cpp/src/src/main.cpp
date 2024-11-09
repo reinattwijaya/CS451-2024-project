@@ -195,7 +195,6 @@ int main(int argc, char **argv) {
           t.tv_sec = 1;
           t.tv_usec = 0;
           while(true){
-            cout << highest_ack << ' ' << current_batch << endl;
             int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
             if(select_result == 0){
               //since the abstraction provides the message string in array, this is still doable
