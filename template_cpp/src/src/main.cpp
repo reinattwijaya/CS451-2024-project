@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
         }
 
         std::string message_to_deliver = "";
-        for(; i < strlen(buffer); i++){
+        for(i++; i < strlen(buffer); i++){
           message_to_deliver += "d " + std::to_string(it->second) + " ";
           for(; i < strlen(buffer) && buffer[i] != '\n'; i++){
             message_to_deliver += buffer[i];
