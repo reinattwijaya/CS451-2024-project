@@ -148,10 +148,14 @@ int main(int argc, char **argv) {
     unsigned long counter = 1;
     for(unsigned long i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
       message += std::to_string(i) + "\n";
-      if (i % 8 == 0){
+      cout << i << endl;
+      if (i % 8 == 0 || i == numberOfMessagesSenderNeedToSend){
         std::string outputMessage = "";
         for(unsigned int i = 0; i < message.length(); i ++){
-          outputMessage += "b " + message[i];
+          std::string tempString = "";
+          while(message[i] != '\n')
+            tempString+=message[i++];
+          outputMessage += "b " + tempString + "\n";
         }
         outputFile << outputMessage;
         std::string message_to_send = std::to_string(counter) + " " + message;
@@ -169,11 +173,8 @@ int main(int argc, char **argv) {
           if(select_result == 0){
             sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
           }else if(select_result < 0){
-            if(EINTR == errno){
-              perror("HAHAHAHAHAHAHHAHAHA");
-            }
             perror("select failed");
-            exit(EXIT_FAILURE);
+            break;
           }else{
             break;
           }
@@ -184,41 +185,6 @@ int main(int argc, char **argv) {
 
         message = "";
       }
-    }
-    if(message != ""){
-      std::string outputMessage = "";
-      for(unsigned int i = 0; i < message.length(); i ++){
-        outputMessage += "b " + message[i];
-      }
-      outputFile << outputMessage;
-      std::string message_to_send = std::to_string(counter) + " " + message;
-      counter++;
-      sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
-      while(true){
-
-        struct timeval t;
-        FD_ZERO(&socks);
-        FD_SET(sockfd, &socks);
-        t.tv_sec = 1;
-        t.tv_usec = 0;
-
-        int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
-        if(select_result == 0){
-          sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
-        }else if(select_result < 0){
-          if(EINTR == errno){
-            perror("HAHAHAHAHAHAHHAHAHA");
-          }
-          perror("select failed");
-          exit(EXIT_FAILURE);
-        }else{
-          break;
-        }
-
-      }
-
-      n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
-      buffer[n] = '\0';
     }
 
   }else{
