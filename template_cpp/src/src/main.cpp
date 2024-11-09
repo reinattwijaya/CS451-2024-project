@@ -195,6 +195,7 @@ int main(int argc, char **argv) {
           t.tv_sec = 1;
           t.tv_usec = 0;
           while(true){
+            cout << highest_ack << ' ' << current_batch << endl;
             int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
             if(select_result == 0){
               //since the abstraction provides the message string in array, this is still doable
@@ -250,8 +251,10 @@ int main(int argc, char **argv) {
         }
         unsigned long message_id = std::stoul(message_id_str);
         if(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
-          std::string send_buffer = std::to_string(processes_highest_ack[it->second]);
-          sendto(sockfd, send_buffer.c_str(), send_buffer.length(), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+          if(message_id % BATCH_SIZE == 0){
+            std::string send_buffer = std::to_string(processes_highest_ack[it->second]);
+            sendto(sockfd, send_buffer.c_str(), send_buffer.length(), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+          }
           continue;
         }
 
