@@ -142,17 +142,19 @@ int main(int argc, char **argv) {
         std::string message_to_send = std::to_string(counter) + " " + message;
         counter++;
         sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
+        struct timeval t;
+        FD_ZERO(&socks);
+        FD_SET(sockfd, &socks);
+        int time = 1000;
+        t.tv_sec = 0;
+        t.tv_usec = time;
         while(true){
-
-          struct timeval t;
-          FD_ZERO(&socks);
-          FD_SET(sockfd, &socks);
-          t.tv_sec = 1;
-          t.tv_usec = 0;
 
           int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
           if(select_result == 0){
             sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
+            time = 2*time;
+            t.tv_usec = time;
           }else if(select_result < 0){
             perror("select failed");
             break;
