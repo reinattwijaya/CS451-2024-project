@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/types.h>
+#include <cstring>
 
 class UDP{
     private:

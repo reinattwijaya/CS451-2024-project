@@ -10,8 +10,9 @@ class PerfectLink{
         struct timeval t;
         int time;
         socklen_t len;
+        unsigned int totalLost;
     public:
-        PerfectLink(in_addr_t ip, in_port_t port, int _time): udp(ip, port) ,time(_time){
+        PerfectLink(in_addr_t ip, in_port_t port, int _time): udp(ip, port) ,time(_time), totalLost(0){
             FD_ZERO(&socks);
             FD_SET(udp.getSockfd(), &socks);
             t.tv_sec = 0;
@@ -23,6 +24,9 @@ class PerfectLink{
             while(true){
                 int select_result = select(udp.getSockfd() + 1, &socks, NULL, NULL, &t);
                 if(select_result == 0){
+                    totalLost++;
+                    if(totalLost > 1000)
+                        std::cout << totalLost << std::endl;
                     udp.send(message, receiver_sa);
                     time = 2*time;
                     t.tv_usec = time;

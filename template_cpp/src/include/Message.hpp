@@ -26,7 +26,7 @@ class Message{
         }
 };
 
-Message parseMessage(std::string buffer){
+inline Message parseMessage(std::string buffer){
     unsigned long i = 0;
     std::string sequence_number_str = "";
     while(buffer[i] != ','){
