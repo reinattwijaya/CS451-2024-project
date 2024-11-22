@@ -1,15 +1,10 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
-#include <string>
 #include <map>
 #include <unordered_map>
 
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-
+#include <FIFObroadcast.hpp>
 #include "parser.hpp"
 #include "hello.h"
 #include <signal.h>
@@ -95,27 +90,8 @@ int main(int argc, char **argv) {
 
   //input finished, set up UDP 
 
-  struct sockaddr_in process_sa, sender_sa;
-  ssize_t n;
-  socklen_t len;
-  len = sizeof(sender_sa);
+  PerfectLink perfectLink(process_host.ip, process_host.port, 1000);
   char buffer[1024];
-
-  int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-  if (sockfd < 0) {
-    perror("socket creation failed");
-    exit(EXIT_FAILURE); 
-  }
-  memset(&process_sa, 0, sizeof(process_sa));
-
-  process_sa.sin_family = AF_INET;
-  process_sa.sin_addr.s_addr = process_host.ip;
-  process_sa.sin_port = process_host.port;
-
-  if (bind(sockfd, reinterpret_cast<const sockaddr*>(&process_sa), sizeof(process_sa)) < 0) {
-    perror("bind failed");
-    exit(EXIT_FAILURE);
-  }
 
   if (process_host.id != receiverIdx){
     //broadcast the messages to receiverIdx
@@ -141,30 +117,8 @@ int main(int argc, char **argv) {
         outputFile << outputMessage;
         std::string message_to_send = std::to_string(counter) + " " + message;
         counter++;
-        sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
-        struct timeval t;
-        FD_ZERO(&socks);
-        FD_SET(sockfd, &socks);
-        int time = 1000;
-        t.tv_sec = 0;
-        t.tv_usec = time;
-        while(true){
-
-          int select_result = select(sockfd + 1, &socks, NULL, NULL, &t);
-          if(select_result == 0){
-            sendto(sockfd, message_to_send.c_str(), message_to_send.size(), 0, reinterpret_cast<const sockaddr*>(&receiver_sa), sizeof(receiver_sa));
-            time = 2*time;
-            t.tv_usec = time;
-          }else if(select_result < 0){
-            perror("select failed");
-            break;
-          }else{
-            break;
-          }
-        }
-
-        n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
-        buffer[n] = '\0';
+        
+        perfectLink.send(parseMessage(message_to_send), reinterpret_cast<sockaddr*>(&receiver_sa), buffer, 1024);
 
         message = "";
       }
@@ -174,75 +128,28 @@ int main(int argc, char **argv) {
     //receiver
     while (true) {
       //wait to receive and deliver the messages
-
-      // std::this_thread::sleep_for(std::chrono::hours(1));
-
-      n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), 1024, MSG_WAITALL, reinterpret_cast<sockaddr*>(&sender_sa), &len);
-      buffer[n] = '\0';
+      struct sockaddr_in sender_sa;
+      Message m = perfectLink.receive(buffer, 1024, reinterpret_cast<sockaddr*>(&sender_sa));
       std::pair<std::string, unsigned short> hostKey(inet_ntoa(sender_sa.sin_addr), ntohs(sender_sa.sin_port));
       auto it = hostMap.find(hostKey);
       if(it != hostMap.end()){
         // make the message to the delivered version, use string since it's easier
-        unsigned long i = 0;
-        std::string message_id_str = "";
-        while(buffer[i] != ' '){
-          message_id_str += buffer[i];
-          i++;
-        }
-        unsigned long message_id = std::stoul(message_id_str);
-        if(messageMap.find(std::make_pair(it->second, message_id)) != messageMap.end()){
-          sendto(sockfd, "0", sizeof("0"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+        int messageId = m.getSequenceNumber();
+        if(messageMap.find(std::make_pair(it->second, messageId)) != messageMap.end()){
+          perfectLink.send(parseMessage("0"), reinterpret_cast<sockaddr*>(&sender_sa), buffer, 1024);
           continue;
         }
 
-        std::string message_to_deliver = "";
-        for(i++; i < strlen(buffer); i++){
-          message_to_deliver += "d " + std::to_string(it->second) + " ";
-          for(; i < strlen(buffer) && buffer[i] != '\n'; i++){
-            message_to_deliver += buffer[i];
-          }
-          message_to_deliver += '\n';
-        }
-        messageMap[std::make_pair(it->second, message_id)] = true;
-        outputFile << message_to_deliver;
+        messageMap[std::make_pair(it->second, messageId)] = true;
+        outputFile << m.createDeliveredMessage(std::to_string(it->second));
 
       }else{
         perror("host not found");
       }
-      sendto(sockfd, "0", sizeof("0"), 0, reinterpret_cast<const sockaddr*>(&sender_sa), len);
+      perfectLink.send(parseMessage("0"), reinterpret_cast<sockaddr*>(&sender_sa), buffer, 1024);
       // cout << inet_ntoa(sender_sa.sin_addr) << ' ' << sender_sa.sin_port << endl;
     }
   }
 
   return 0;
 }
-
-
-
-/*
-current algorithm: 
-SENDER
-1. loop over all the messages need to be sent
-2. every 8 messages, keep sending the messages until you get the ACK from the receiver
-3. if you get the ACK, then loop back up
-
-RECEIVER
-1. wait for the message from the sender
-2. get the host id from the ip and port information
-3. check the message id, if it is already received, then ignore
-4. if it is not received, then deliver the message -> loop through all the messages and put it into the string
-5. loop back up and wait for the next message
-
-NEW algorithm:
-SENDER
-1. loop over all the messages need to be sent
-2. keep sending x messages until the end of the message (x needs to be experimented on)
-3. at the end of the loop, recvmmsg the ACK you get from the receiver, decode it and acknowledge it in the map
-4. loop back up and send message that hasn't receive the ACK
-
-RECEIVER
-1. recvmmsg the messages from the sender
-2. make a thread for the recvmmsg that you have received to deliver the message (distinction between receiving message and delivering)
-3. deliver the message that hasn't been delivered based on host and message id
-
-*/
