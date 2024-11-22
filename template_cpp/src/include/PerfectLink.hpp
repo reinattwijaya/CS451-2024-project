@@ -13,7 +13,7 @@ class PerfectLink{
         unsigned int totalLost;
     public:
         UDP udp;
-        PerfectLink(in_addr_t ip, in_port_t port, int _time): udp(ip, port) ,time(_time), totalLost(0){
+        PerfectLink(in_addr_t ip, in_port_t port, int _time): time(_time), totalLost(0), udp(ip, port){
             FD_ZERO(&socks);
             FD_SET(udp.getSockfd(), &socks);
             t.tv_sec = 0;
