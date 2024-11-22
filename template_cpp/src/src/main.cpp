@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
         // make the message to the delivered version, use string since it's easier
         int messageId = m.getSequenceNumber();
         if(messageMap.find(std::make_pair(it->second, messageId)) != messageMap.end()){
-          perfectLink.send(Message("0"), reinterpret_cast<sockaddr*>(&sender_sa), buffer, 1024);
+          perfectLink.udp.send(Message("0"), reinterpret_cast<sockaddr*>(&sender_sa));
           continue;
         }
 
