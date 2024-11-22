@@ -6,13 +6,13 @@
 
 class PerfectLink{
     private:
-        UDP udp;
         fd_set socks;
         struct timeval t;
         int time;
         socklen_t len;
         unsigned int totalLost;
     public:
+        UDP udp;
         PerfectLink(in_addr_t ip, in_port_t port, int _time): udp(ip, port) ,time(_time), totalLost(0){
             FD_ZERO(&socks);
             FD_SET(udp.getSockfd(), &socks);
