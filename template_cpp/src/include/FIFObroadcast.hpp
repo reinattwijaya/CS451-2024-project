@@ -1,1 +1,6 @@
-#include<PerfectLink.hpp>
+#pragma once
+#include<UDP.hpp>
+
+class FIFOBroadcast{
+
+};

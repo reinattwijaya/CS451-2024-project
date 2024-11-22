@@ -2,6 +2,7 @@
 #include <string>
 #include <UDP.hpp>
 #include <sys/select.h>
+#include <iostream>
 
 class PerfectLink{
     private:
@@ -42,6 +43,6 @@ class PerfectLink{
         Message receive(char* buffer, unsigned short buffer_len, sockaddr* sender_sa){
             len = sizeof(*sender_sa);
             udp.receive(buffer, buffer_len, sender_sa, &len);
-            return parseMessage(buffer);
+            return Message(buffer);
         }
 };

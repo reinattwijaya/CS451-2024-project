@@ -8,6 +8,7 @@
 #include "parser.hpp"
 #include "hello.h"
 #include <signal.h>
+#include <PerfectLink.hpp>
 
 using std::cout;
 using std::endl;
@@ -39,8 +40,6 @@ struct pair_hash {
         auto h1 = std::hash<T1>{}(p.first);
         auto h2 = std::hash<T2>{}(p.second);
 
-        // Mainly for demonstration purposes, i.e. works but is overly simple
-        // In the real world, use sth. like boost.hash_combine
         return h1 ^ h2;  
     }
 };
@@ -115,10 +114,10 @@ int main(int argc, char **argv) {
           outputMessage += "b " + tempString + "\n";
         }
         outputFile << outputMessage;
-        std::string message_to_send = std::to_string(counter) + " " + message;
+        std::string message_to_send = std::to_string(counter) + "," + message;
         counter++;
         
-        perfectLink.send(parseMessage(message_to_send), reinterpret_cast<sockaddr*>(&receiver_sa), buffer, 1024);
+        perfectLink.send(Message(message_to_send), reinterpret_cast<sockaddr*>(&receiver_sa), buffer, 1024);
 
         message = "";
       }
@@ -136,7 +135,7 @@ int main(int argc, char **argv) {
         // make the message to the delivered version, use string since it's easier
         int messageId = m.getSequenceNumber();
         if(messageMap.find(std::make_pair(it->second, messageId)) != messageMap.end()){
-          perfectLink.send(parseMessage("0"), reinterpret_cast<sockaddr*>(&sender_sa), buffer, 1024);
+          perfectLink.send(Message("0"), reinterpret_cast<sockaddr*>(&sender_sa), buffer, 1024);
           continue;
         }
 
@@ -146,7 +145,7 @@ int main(int argc, char **argv) {
       }else{
         perror("host not found");
       }
-      perfectLink.send(parseMessage("0"), reinterpret_cast<sockaddr*>(&sender_sa), buffer, 1024);
+      perfectLink.send(Message("0"), reinterpret_cast<sockaddr*>(&sender_sa), buffer, 1024);
       // cout << inet_ntoa(sender_sa.sin_addr) << ' ' << sender_sa.sin_port << endl;
     }
   }

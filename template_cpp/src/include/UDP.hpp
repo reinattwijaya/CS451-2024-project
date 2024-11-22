@@ -29,7 +29,7 @@ class UDP{
             }
         }
         void send(Message message, const sockaddr* receiver_sa){
-            std::string fullMessage = message.getFullMessage();
+            string fullMessage = message.getMessage();
             sendto(sockfd, fullMessage.c_str(), fullMessage.size(), 0, receiver_sa, sizeof(*receiver_sa));
         }
         void receive(char* buffer, unsigned short buffer_len, sockaddr* sender_sa, socklen_t* len){
