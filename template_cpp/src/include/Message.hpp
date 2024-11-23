@@ -29,7 +29,7 @@ class Message{
                 i++;
             }
             for(i++; i < message.length(); i++){
-                message_to_deliver = "d " + process_id + " ";
+                message_to_deliver += "d " + process_id + " ";
                 for(; i < message.length() && message[i] != '\n'; i++){
                     message_to_deliver += message[i];
                 }

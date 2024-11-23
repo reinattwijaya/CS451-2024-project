@@ -26,7 +26,7 @@ class PerfectLink{
                 int select_result = select(udp.getSockfd() + 1, &socks, NULL, NULL, &t);
                 if(select_result == 0){
                     totalLost++;
-                    if(totalLost > 1000)
+                    if(totalLost > 1)
                         std::cout << totalLost << std::endl;
                     udp.send(message, receiver_sa);
                     time = 2*time;
