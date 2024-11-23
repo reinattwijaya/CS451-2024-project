@@ -17,7 +17,7 @@ class Message{
                     sequence_number_str += m[i];
                     i++;
                 }
-                int sequence_number = std::stoi(sequence_number_str);
+                sequence_number = std::stoi(sequence_number_str);
             }
         }
         int getSequenceNumber(){return sequence_number;}
