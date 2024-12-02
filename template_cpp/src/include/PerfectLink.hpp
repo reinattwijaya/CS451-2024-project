@@ -15,8 +15,6 @@ class PerfectLink{
     public:
         UDP udp;
         PerfectLink(in_addr_t ip, in_port_t port, int _time): time(_time), totalLost(0), udp(ip, port){
-            FD_ZERO(&socks);
-            FD_SET(udp.getSockfd(), &socks);
             t.tv_sec = 0;
             t.tv_usec = time;
         }
@@ -24,6 +22,8 @@ class PerfectLink{
             len = sizeof(*receiver_sa);
             udp.send(message, receiver_sa);
             while(true){
+                FD_ZERO(&socks);
+                FD_SET(udp.getSockfd(), &socks);
                 int select_result = select(udp.getSockfd() + 1, &socks, NULL, NULL, &t);
                 if(select_result == 0){
                     totalLost++;
