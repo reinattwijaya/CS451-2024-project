@@ -19,7 +19,7 @@ class PerfectLink{
             t.tv_sec = 0;
             t.tv_usec = time;
         }
-        void send(Message message, sockaddr* receiver_sa, char* buffer, unsigned short buffer_len){
+        void send(Message message, sockaddr* receiver_sa, char* buffer, unsigned short buffer_len, int counter){
             len = sizeof(*receiver_sa);
             udp.send(message, receiver_sa);
             while(true){
@@ -35,10 +35,12 @@ class PerfectLink{
                     perror("select failed");
                     break;
                 }else{
-                    break;
+                    udp.receive(buffer, buffer_len, receiver_sa, &len);
+                    int messageId = std::stoi(buffer);
+                    if(messageId == counter)
+                        break;
                 }
             }
-            udp.receive(buffer, buffer_len, receiver_sa, &len);
         }
         Message receive(char* buffer, unsigned short buffer_len, sockaddr* sender_sa){
             len = sizeof(*sender_sa);

@@ -115,10 +115,9 @@ int main(int argc, char **argv) {
         }
         outputFile << outputMessage;
         string message_to_send = std::to_string(counter) + "," + message;
-        counter++;
         
-        perfectLink.send(Message(message_to_send), reinterpret_cast<sockaddr*>(&receiver_sa), buffer, 1024);
-
+        perfectLink.send(Message(message_to_send), reinterpret_cast<sockaddr*>(&receiver_sa), buffer, 1024, counter);
+        counter++;
         message = "";
       }
     }
@@ -131,9 +130,9 @@ int main(int argc, char **argv) {
       Message m = perfectLink.receive(buffer, 1024, reinterpret_cast<sockaddr*>(&sender_sa));
       std::pair<string, unsigned short> hostKey(inet_ntoa(sender_sa.sin_addr), ntohs(sender_sa.sin_port));
       auto it = hostMap.find(hostKey);
+      int messageId = m.getSequenceNumber();
       if(it != hostMap.end()){
         // make the message to the delivered version, use string since it's easier
-        int messageId = m.getSequenceNumber();
         if(messageMap.find(std::make_pair(it->second, messageId)) != messageMap.end()){
           perfectLink.udp.send(Message("0"), reinterpret_cast<sockaddr*>(&sender_sa));
           continue;
@@ -145,7 +144,7 @@ int main(int argc, char **argv) {
       }else{
         perror("host not found");
       }
-      perfectLink.udp.send(Message("0"), reinterpret_cast<sockaddr*>(&sender_sa));
+      perfectLink.udp.send(Message(std::to_string(messageId)), reinterpret_cast<sockaddr*>(&sender_sa));
     }
   }
 
