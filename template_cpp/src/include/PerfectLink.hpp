@@ -29,7 +29,9 @@ class PerfectLink{
                     if(totalLost > 1)
                         std::cout << totalLost << std::endl;
                     udp.send(message, receiver_sa);
+                    t = (struct timeval){0};
                     time = 2*time;
+                    t.tv_sec = 0;
                     t.tv_usec = time;
                 }else if(select_result < 0){
                     perror("select failed");
@@ -37,8 +39,9 @@ class PerfectLink{
                 }else{
                     udp.receive(buffer, buffer_len, receiver_sa, &len);
                     unsigned long messageId = std::stoul(buffer);
-                    if(messageId == counter)
+                    if(messageId == counter){
                         break;
+                    }
                 }
             }
         }
