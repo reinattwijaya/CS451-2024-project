@@ -14,13 +14,14 @@ class PerfectLink{
     public:
         UDP udp;
         PerfectLink(in_addr_t ip, in_port_t port, int _time): time(_time), totalLost(0), udp(ip, port){
-            t.tv_sec = 0;
-            t.tv_usec = time;
         }
         void send(Message message, sockaddr* receiver_sa, char* buffer, unsigned short buffer_len, unsigned long counter){
             len = sizeof(*receiver_sa);
             udp.send(message, receiver_sa);
             while(true){
+                memset(&t, 0, sizeof(timeval));
+                t.tv_sec = 0;
+                t.tv_usec = time;
                 FD_ZERO(&socks);
                 FD_SET(udp.getSockfd(), &socks);
                 int select_result = select(udp.getSockfd() + 1, &socks, NULL, NULL, &t);
@@ -30,9 +31,6 @@ class PerfectLink{
                         std::cout << totalLost << std::endl;
                     udp.send(message, receiver_sa);
                     time = 2*time;
-                    memset(&t, 0, sizeof(timeval));
-                    t.tv_sec = 0;
-                    t.tv_usec = time;
                 }else if(select_result < 0){
                     perror("select failed");
                     break;
