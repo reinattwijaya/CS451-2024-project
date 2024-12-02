@@ -8,6 +8,7 @@ class PerfectLink{
     private:
         fd_set socks;
         struct timeval t;
+        struct timeval init_t;
         int time;
         socklen_t len;
         unsigned int totalLost;
@@ -29,8 +30,8 @@ class PerfectLink{
                     if(totalLost > 1)
                         std::cout << totalLost << std::endl;
                     udp.send(message, receiver_sa);
-                    t = (struct timeval){0};
                     time = 2*time;
+                    t = init_t;
                     t.tv_sec = 0;
                     t.tv_usec = time;
                 }else if(select_result < 0){
