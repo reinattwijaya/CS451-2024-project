@@ -20,8 +20,8 @@ class PerfectLink{
             udp.send(message, receiver_sa);
             while(true){
                 memset(&t, 0, sizeof(timeval));
-                t.tv_sec = 0;
-                t.tv_usec = time;
+                t.tv_sec = (time/1000000);
+                t.tv_usec = (time%1000000);
                 FD_ZERO(&socks);
                 FD_SET(udp.getSockfd(), &socks);
                 int select_result = select(udp.getSockfd() + 1, &socks, NULL, NULL, &t);
