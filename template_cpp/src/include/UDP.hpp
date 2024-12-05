@@ -4,13 +4,13 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/types.h>
-#include <cstring>
 
 class UDP{
     private:
-        int sockfd;
+        int sockfd, sender_sockfd;
         struct sockaddr_in process_sa;
     public:
+        //create a udp socket and bind it to the given ip and port
         UDP(in_addr_t ip, in_port_t port){
             sockfd = socket(AF_INET, SOCK_DGRAM, 0);
             if (sockfd < 0) {
@@ -28,12 +28,14 @@ class UDP{
                 exit(EXIT_FAILURE);
             }
         }
+        //the sender uses a random port assigned by the OS
         void send(Message message, const sockaddr* receiver_sa){
             string fullMessage = message.getMessage();
-            sendto(sockfd, fullMessage.c_str(), fullMessage.size(), 0, receiver_sa, sizeof(*receiver_sa));
+            sendto(sender_sockfd, fullMessage.c_str(), fullMessage.size(), 0, receiver_sa, sizeof(*receiver_sa));
         }
+        //receive to the port binded to the UDP object
         void receive(char* buffer, unsigned short buffer_len, sockaddr* sender_sa, socklen_t* len){
-            ssize_t n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), buffer_len, MSG_WAITALL, reinterpret_cast<sockaddr*>(sender_sa), len);
+            ssize_t n = recvfrom(sockfd, reinterpret_cast<char*>(buffer), buffer_len, MSG_WAITALL, sender_sa, len);
             buffer[n] = '\0';
         }
         int getSockfd(){
