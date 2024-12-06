@@ -29,7 +29,9 @@ class FIFOBroadcast{
         uint8_t process_id;
         socklen_t len;
         struct sockaddr_in receiver_sa;
+        //acks[process_id][sequence_number] = (numAck, message)
         std::map<std::pair<uint8_t, uint32_t>, std::pair<uint8_t, Message>> acks;
+        //p_acks[process_id][sender_id][sequence_number]
         std::map<std::pair<uint8_t, std::pair<uint8_t, uint32_t>>, bool> p_acks;
         std::map<uint8_t, uint32_t> lastDelivered;
         std::vector<Parser::Host> hosts;
@@ -134,14 +136,19 @@ class FIFOBroadcast{
         }
 
         //we broadcast the message to all other processes except the message sender and the current process
-        void broadcast(Message message, bool sendToSender = false){
+        void broadcast(Message message, bool isAckBroadcast = false){
             if(message.getSenderId() == message.getProcessId())
                 acks[make_pair(message.getProcessId(), message.getSequenceNumber())] = make_pair(1, message);
             for(unsigned long i = 0; i < hosts.size(); i ++){
                 //std::cout << "BROADCASTING: " << static_cast<unsigned int>(process_id) << ' ' << hosts[i].id << ' ' << static_cast<unsigned int>(message.getProcessId()) <<  ' ' << sendToSender << std::endl;
-                if((!sendToSender && hosts[i].id == message.getProcessId()) || hosts[i].id == process_id)
+                if(isAckBroadcast && (hosts[i].id != message.getProcessId() || hosts[i].id != message.getSenderId()))
                     continue;
-                //std::cout << hosts[i].ip << ' ' << hosts[i].port << std::endl;
+                if(!isAckBroadcast){
+                    if(hosts[i].id == message.getSenderId() || hosts[i].id == message.getProcessId() || hosts[i].id == process_id ||
+                            (p_acks[make_pair(message.getProcessId(), make_pair(hosts[i].id, message.getSequenceNumber() && message.getIsAck()))]))
+                        continue;
+                }
+                // std::cout << hosts[i].ip << ' ' << hosts[i].port << std::endl;
                 memset(&receiver_sa, 0, sizeof(receiver_sa));
                 receiver_sa.sin_family = AF_INET;
                 receiver_sa.sin_addr.s_addr = hosts[i].ip;
