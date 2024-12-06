@@ -140,15 +140,14 @@ class FIFOBroadcast{
             if(message.getSenderId() == message.getProcessId())
                 acks[make_pair(message.getProcessId(), message.getSequenceNumber())] = make_pair(1, message);
             for(unsigned long i = 0; i < hosts.size(); i ++){
-                //std::cout << "BROADCASTING: " << static_cast<unsigned int>(process_id) << ' ' << hosts[i].id << ' ' << static_cast<unsigned int>(message.getProcessId()) <<  ' ' << sendToSender << std::endl;
-                if(isAckBroadcast && (hosts[i].id != message.getProcessId() || hosts[i].id != message.getSenderId()))
+                if(isAckBroadcast && hosts[i].id != message.getProcessId() && hosts[i].id != message.getSenderId())
                     continue;
                 if(!isAckBroadcast){
                     if(hosts[i].id == message.getSenderId() || hosts[i].id == message.getProcessId() || hosts[i].id == process_id ||
                             (p_acks[make_pair(message.getProcessId(), make_pair(hosts[i].id, message.getSequenceNumber() && message.getIsAck()))]))
                         continue;
                 }
-                // std::cout << hosts[i].ip << ' ' << hosts[i].port << std::endl;
+                //std::cout << "BROADCASTING FROM PROCESS " << static_cast<unsigned int>(process_id) << " TO " << hosts[i].id << " OF MESSAGE " << static_cast<unsigned int>(message.getProcessId()) <<  " WHICH IS (1=ACK,0=NOTACK): " << isAckBroadcast << std::endl;
                 memset(&receiver_sa, 0, sizeof(receiver_sa));
                 receiver_sa.sin_family = AF_INET;
                 receiver_sa.sin_addr.s_addr = hosts[i].ip;

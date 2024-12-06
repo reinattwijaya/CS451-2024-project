@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
   //send messages and periodically wait for messages
   string message = "", broadCastMessage = "";
   bool done = false;
+  int time = 1000;
   while(true){
     uint32_t counter = 1;
     for(uint32_t i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
@@ -87,20 +88,22 @@ int main(int argc, char **argv) {
         if(!done)
             broadCastMessage = "";
       }
-      while(true && i >= 8){
-        //cout << "SELECT RESULT: ";
+      while(i%8 == 0 || i == numberOfMessagesSenderNeedToSend){
         fd_set socks;
         struct timeval t;
         socklen_t len;
-        t.tv_sec = 1;
-        t.tv_usec = 0;
+        t.tv_sec = time/1000000;
+        t.tv_usec = time%1000000;
         FD_ZERO(&socks);
         FD_SET(fifo.udp.getSockfd(), &socks);
         int select_result = select(fifo.udp.getSockfd() + 1, &socks, NULL, NULL, &t);
-        //cout << select_result << endl;
+        //cout << "SELECT RESULT: " << select_result << endl;
         //if it is error or empty, break and go on
-        if(select_result <= 0)
+        if(select_result <= 0){
+          if(time < 1000000)
+            time *= 2;
           break;
+        }
         fifo.process_receive();
       }
     }
