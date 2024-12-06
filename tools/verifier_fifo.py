@@ -20,10 +20,10 @@ for i in range(1, N+1):
         for line in lines:
             line = line.split(' ')
             if line[0] == 'b':
-                max_broadcasted[i] = int(line[1])
-                if(int(line[1]) < i):
+                if(int(line[1]) < max_broadcasted[i]):
                     print("Error in proc" + int_to_str(i) + ".output" + ": BROADCASTED TWICE OR BROADCASTED IN WRONG ORDER")
                     sys.exit(1)
+                max_broadcasted[i] = int(line[1])
             elif line[0] == 'd':
                 all_delivered[(int(line[1]), int(line[2]))] = True
 
