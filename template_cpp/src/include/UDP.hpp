@@ -39,12 +39,12 @@ class UDP{
         void send(Message message, const sockaddr* receiver_sa){
             string fullMessage = message.getMessage();
             //std::cout << message.createDeliveredMessage() << std::endl;
-            std::cout << "SEQ: " << static_cast<unsigned int>(message.getSequenceNumber()) << std::endl;
+            //std::cout << "SEQ: " << static_cast<unsigned int>(message.getSequenceNumber()) << std::endl;
             ssize_t bytes_sent = sendto(sender_sockfd, fullMessage.data(), fullMessage.size(), 0, receiver_sa, sizeof(*receiver_sa));
             if(bytes_sent < 0){
                 std::cerr << "SEND FAILED" << std::endl;
             }else{
-                std::cout << "SENDING THE MESSAGE: " << bytes_sent << std::endl;
+                //std::cout << "SENDING THE MESSAGE: " << bytes_sent << std::endl;
             }
         }
         //receive to the port binded to the UDP object

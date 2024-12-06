@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
             broadCastMessage = "";
       }
       while(true && i >= 8){
-        cout << "SELECT RESULT: ";
+        //cout << "SELECT RESULT: ";
         fd_set socks;
         struct timeval t;
         socklen_t len;
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
         FD_ZERO(&socks);
         FD_SET(fifo.udp.getSockfd(), &socks);
         int select_result = select(fifo.udp.getSockfd() + 1, &socks, NULL, NULL, &t);
-        cout << select_result << endl;
+        //cout << select_result << endl;
         //if it is error or empty, break and go on
         if(select_result <= 0)
           break;

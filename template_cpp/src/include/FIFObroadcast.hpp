@@ -50,11 +50,11 @@ class FIFOBroadcast{
             string recvMessage = udp.receive(reinterpret_cast<sockaddr*>(&sender_sa), &len);
 
             Message m = Message(recvMessage);
-            std::cout << "RECEIVING: " << m.getIsAck() << ' ' << static_cast<unsigned int>(m.getSenderId()) <<' ' << static_cast<unsigned int>(m.getProcessId()) << ' ' << static_cast<unsigned int>(m.getSequenceNumber()) << std::endl;
+            //std::cout << "RECEIVING: " << m.getIsAck() << ' ' << static_cast<unsigned int>(m.getSenderId()) <<' ' << static_cast<unsigned int>(m.getProcessId()) << ' ' << static_cast<unsigned int>(m.getSequenceNumber()) << std::endl;
             
-            for (const auto& pair : acks) {
-                std::cout << "Key: (" << static_cast<unsigned int>(pair.first.first) << ", " << static_cast<unsigned int>(pair.first.second) << ")\n";
-            }
+            //for (const auto& pair : acks) {
+            //    std::cout << "Key: (" << static_cast<unsigned int>(pair.first.first) << ", " << static_cast<unsigned int>(pair.first.second) << ")\n";
+            //}
             
             auto it = acks.find(make_pair(m.getProcessId(), m.getSequenceNumber()));
             uint8_t numAck = 0, m_sender_id = m.getSenderId(), m_process_id = m.getProcessId();
@@ -97,14 +97,14 @@ class FIFOBroadcast{
                 }
                 //if there is no ack, create the ack
                 else{
-                    std::cout << static_cast<unsigned int>(m_process_id) << ' ' << static_cast<unsigned int>(m_seq_num) << std::endl;
-                    for (const auto& pair : acks) {
-                        std::cout << "Key: (" << static_cast<unsigned int>(pair.first.first) << ", " << static_cast<unsigned int>(pair.first.second) << ")\n";
-                    }
+                    //std::cout << static_cast<unsigned int>(m_process_id) << ' ' << static_cast<unsigned int>(m_seq_num) << std::endl;
+                    //for (const auto& pair : acks) {
+                    //    std::cout << "Key: (" << static_cast<unsigned int>(pair.first.first) << ", " << static_cast<unsigned int>(pair.first.second) << ")\n";
+                    //}
                     auto res = acks.insert({make_pair(m_process_id, m_seq_num), make_pair(2, m)});
                     it = res.first;
-                    std::cout << "NO ACK: " << ' ' << res.second << std::endl;
-                    std::cout << it->second.second.getIsAck() << std::endl;
+                    //std::cout << "NO ACK: " << ' ' << res.second << std::endl;
+                    //std::cout << it->second.second.getIsAck() << std::endl;
                     if(m_process_id == m_sender_id)
                         numAck = 2;
                     else
@@ -116,11 +116,11 @@ class FIFOBroadcast{
                 }
             }
             uint32_t curSeqNum = m_seq_num;
-            std::cout << "THE CURRENT NUMACK: " << static_cast<unsigned int>(numAck) << ' ' << static_cast<unsigned int>(hostCutOff) << std::endl;
-            std::cout << "THE CUR SEQ NUM: " << curSeqNum << ' ' << lastDelivered[m_process_id] << std::endl;
+            //std::cout << "THE CURRENT NUMACK: " << static_cast<unsigned int>(numAck) << ' ' << static_cast<unsigned int>(hostCutOff) << std::endl;
+            //std::cout << "THE CUR SEQ NUM: " << curSeqNum << ' ' << lastDelivered[m_process_id] << std::endl;
             if(numAck > hostCutOff && lastDelivered[m_process_id]+1 == curSeqNum){
                 string msgToDeliver = it->second.second.createDeliveredMessage();
-                std::cout << "THE MESSAGE: " << msgToDeliver << std::endl;
+                //std::cout << "THE MESSAGE: " << msgToDeliver << std::endl;
                 while(numAck > hostCutOff && msgToDeliver != ""){
                     outputFile << msgToDeliver;
                     it = acks.find(make_pair(m.getProcessId(), ++curSeqNum));
@@ -138,10 +138,10 @@ class FIFOBroadcast{
             if(message.getSenderId() == message.getProcessId())
                 acks[make_pair(message.getProcessId(), message.getSequenceNumber())] = make_pair(1, message);
             for(unsigned long i = 0; i < hosts.size(); i ++){
-                std::cout << "BROADCASTING: " << static_cast<unsigned int>(process_id) << ' ' << hosts[i].id << ' ' << static_cast<unsigned int>(message.getProcessId()) <<  ' ' << sendToSender << std::endl;
+                //std::cout << "BROADCASTING: " << static_cast<unsigned int>(process_id) << ' ' << hosts[i].id << ' ' << static_cast<unsigned int>(message.getProcessId()) <<  ' ' << sendToSender << std::endl;
                 if((!sendToSender && hosts[i].id == message.getProcessId()) || hosts[i].id == process_id)
                     continue;
-                std::cout << hosts[i].ip << ' ' << hosts[i].port << std::endl;
+                //std::cout << hosts[i].ip << ' ' << hosts[i].port << std::endl;
                 memset(&receiver_sa, 0, sizeof(receiver_sa));
                 receiver_sa.sin_family = AF_INET;
                 receiver_sa.sin_addr.s_addr = hosts[i].ip;
