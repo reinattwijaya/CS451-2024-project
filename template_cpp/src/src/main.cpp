@@ -70,32 +70,41 @@ int main(int argc, char **argv) {
 
   //send messages and periodically wait for messages
   string message = "", broadCastMessage = "";
-  uint32_t counter = 1;
-  for(uint32_t i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
-    message += uint32ToString(i);
-    broadCastMessage += "b " + std::to_string(i) + '\n';
-    if (i % 8 == 0 || i == numberOfMessagesSenderNeedToSend){
-      outputFile << broadCastMessage;
-      Message message_to_send = Message(message, process_host_id, counter, false);
-      fifo.broadcast(message_to_send);
-      counter++;
-      message = "";
-      broadCastMessage = "";
+  bool done = false;
+  while(true){
+    uint32_t counter = 1;
+    for(uint32_t i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
+      message += uint32ToString(i);
+      if(!done)
+          broadCastMessage += "b " + std::to_string(i) + '\n';
+      if (i % 8 == 0 || i == numberOfMessagesSenderNeedToSend){
+        if(!done)
+            outputFile << broadCastMessage;
+        Message message_to_send = Message(message, process_host_id, process_host_id, counter, false);
+        fifo.broadcast(message_to_send);
+        counter++;
+        message = "";
+        if(!done)
+            broadCastMessage = "";
+      }
+      while(true && i >= 8){
+        cout << "SELECT RESULT: ";
+        fd_set socks;
+        struct timeval t;
+        socklen_t len;
+        t.tv_sec = 1;
+        t.tv_usec = 0;
+        FD_ZERO(&socks);
+        FD_SET(fifo.udp.getSockfd(), &socks);
+        int select_result = select(fifo.udp.getSockfd() + 1, &socks, NULL, NULL, &t);
+        cout << select_result << endl;
+        //if it is error or empty, break and go on
+        if(select_result <= 0)
+          break;
+        fifo.process_receive();
+      }
     }
-    while(true){
-      fd_set socks;
-      struct timeval t;
-      socklen_t len;
-      t.tv_sec = 1;
-      t.tv_usec = 0;
-      FD_ZERO(&socks);
-      FD_SET(fifo.udp.getSockfd(), &socks);
-      int select_result = select(fifo.udp.getSockfd() + 1, &socks, NULL, NULL, &t);
-      //if it is error or empty, break and go on
-      if(select_result <= 0)
-        break;
-      fifo.process_receive();
-    }
+    done = true;
   }
 
   return 0;
