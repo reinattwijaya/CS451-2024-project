@@ -52,7 +52,7 @@ class FIFOBroadcast{
             string recvMessage = udp.receive(reinterpret_cast<sockaddr*>(&sender_sa), &len);
 
             Message m = Message(recvMessage);
-            //std::cout << "RECEIVING: " << m.getIsAck() << ' ' << static_cast<unsigned int>(m.getSenderId()) <<' ' << static_cast<unsigned int>(m.getProcessId()) << ' ' << static_cast<unsigned int>(m.getSequenceNumber()) << std::endl;
+            //std::cout << "RECEIVING (1-ACK,0-NOT): " << m.getIsAck() << " FROM THE PROCESS " << static_cast<unsigned int>(m.getSenderId()) << " OF A MESSAGE FROM " << static_cast<unsigned int>(m.getProcessId()) << " WITH SEQ NUM: " << static_cast<unsigned int>(m.getSequenceNumber()) << std::endl;
             
             //for (const auto& pair : acks) {
             //    std::cout << "Key: (" << static_cast<unsigned int>(pair.first.first) << ", " << static_cast<unsigned int>(pair.first.second) << ")\n";
@@ -78,9 +78,11 @@ class FIFOBroadcast{
                     auto it_p1 = p_acks.find(make_pair(m_process_id, make_pair(m_sender_id, m_seq_num)));
                     //if the sender process ack has not been processed, process it
                     if(it_p1 == p_acks.end()){
+
                     	 numAck = ++it->second.first;
                     	 p_acks[make_pair(m_process_id, make_pair(m_sender_id, m_seq_num))] = true;
-                    }
+                    }else
+                        numAck = it->second.first;
                 }
             }
             //real message, rebroadcast it and send acknowledgement
@@ -93,7 +95,12 @@ class FIFOBroadcast{
                 broadcast(ack, true);
                 //if there is an ack, replace the message to have the actual message
                 if(it != acks.end()){
-                    numAck = it->second.first;
+                    auto it_p1 = p_acks.find(make_pair(m_process_id, make_pair(m_sender_id, m_seq_num)));
+                    if(it_p1 == p_acks.end()){
+                        numAck = ++it->second.first;
+                        p_acks[make_pair(m_process_id, make_pair(m_sender_id, m_seq_num))] = true;
+                    }else
+                        numAck = it->second.first;
                     if(it->second.second.getIsAck())
                         it->second.second = m;
                 }
@@ -137,16 +144,17 @@ class FIFOBroadcast{
 
         //we broadcast the message to all other processes except the message sender and the current process
         void broadcast(Message message, bool isAckBroadcast = false){
-            if(message.getSenderId() == message.getProcessId())
+            if(message.getSenderId() == message.getProcessId() && (acks.find(make_pair(message.getProcessId(), message.getSequenceNumber())) == acks.end()))
                 acks[make_pair(message.getProcessId(), message.getSequenceNumber())] = make_pair(1, message);
             for(unsigned long i = 0; i < hosts.size(); i ++){
-                if(isAckBroadcast && hosts[i].id != message.getProcessId() && hosts[i].id != message.getSenderId())
+                if((isAckBroadcast && hosts[i].id != message.getProcessId() && hosts[i].id != message.getSenderId()) || hosts[i].id == process_id)
                     continue;
                 if(!isAckBroadcast){
                     if(hosts[i].id == message.getSenderId() || hosts[i].id == message.getProcessId() || hosts[i].id == process_id ||
                             (p_acks[make_pair(message.getProcessId(), make_pair(hosts[i].id, message.getSequenceNumber() && message.getIsAck()))]))
                         continue;
                 }
+
                 //std::cout << "BROADCASTING FROM PROCESS " << static_cast<unsigned int>(process_id) << " TO " << hosts[i].id << " OF MESSAGE " << static_cast<unsigned int>(message.getProcessId()) <<  " WHICH IS (1=ACK,0=NOTACK): " << isAckBroadcast << std::endl;
                 memset(&receiver_sa, 0, sizeof(receiver_sa));
                 receiver_sa.sin_family = AF_INET;

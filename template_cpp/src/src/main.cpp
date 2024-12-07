@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
   //send messages and periodically wait for messages
   string message = "", broadCastMessage = "";
   bool done = false;
-  int time = 1000;
+  int time = 0;
   while(true){
     uint32_t counter = 1;
     for(uint32_t i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
