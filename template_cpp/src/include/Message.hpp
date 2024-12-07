@@ -66,8 +66,10 @@ class Message{
                 isAck = false;
             sender_id = stringToUInt8(m.substr(0, 1));
             process_id = stringToUInt8(m.substr(1, 1));
-            if(process_id == 0)
+            if(process_id == 0 || process_id > 128){
                 isNAck = true;
+                process_id -= 128;
+            }
             else
                 isNAck = false;
             sequence_number = stringToUInt32(m.substr(2, 4));
@@ -83,6 +85,7 @@ class Message{
         uint8_t getSenderId(){return sender_id;}
         uint8_t getProcessId(){return process_id;}
         bool getIsAck(){return isAck;}
+        bool getIsNAck(){return isNAck;}
         string getMessage(){return message;}
         string createDeliveredMessage(){
             string message_to_deliver = "";

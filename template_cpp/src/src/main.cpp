@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
         int select_result = select(fifo.udp.getSockfd() + 1, &socks, NULL, NULL, &t);
         //cout << "SELECT RESULT: " << select_result << endl;
         //if it is error or empty, break and go on
-        fifo.process_receive();
+        fifo.process_receive(i);
       }
       struct sockaddr_in receiver_sa;
       if(i == numberOfMessagesSenderNeedToSend/2 || i == numberOfMessagesSenderNeedToSend){

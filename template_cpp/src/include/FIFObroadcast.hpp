@@ -47,7 +47,7 @@ class FIFOBroadcast{
             process_id(pid), hosts(_hosts), outputFile(outFile), udp(ip, port){
         }
 
-        void process_receive(){
+        void process_receive(uint32_t &the_i){
             struct sockaddr_in sender_sa;
             string recvMessage = udp.receive(reinterpret_cast<sockaddr*>(&sender_sa), &len);
 
@@ -68,7 +68,7 @@ class FIFOBroadcast{
                         auto it = acks.find(make_pair(i, lastDelivered[i]));
                         if(it == acks.end() || it->second.second.getMessage() == ""){
                             //if no message has been found, send a NACK
-                            Message nack = Message("", process_id, i, lastDelivered[i], 0);
+                            Message nack = Message("", process_id, i + 128, lastDelivered[i], 0);
                             for(unsigned long i = 0; i < hosts.size(); i ++){
                                 memset(&receiver_sa, 0, sizeof(receiver_sa));
                                 receiver_sa.sin_family = AF_INET;
@@ -103,6 +103,28 @@ class FIFOBroadcast{
             //decreases the number of broadcasts by around 10%, dk if it is worth it but it also reduces some performance so just comment
             // if(lastDelivered[m_process_id] >= m_seq_num)
             //     return;
+
+            //another special case, just make sure to reset back the counter to that specific process if 
+            if(m.getIsNAck()){
+                if(m_process_id == process_id){
+                    the_i = m_seq_num-1;
+                }
+                if(it != acks.end()){
+                    memset(&receiver_sa, 0, sizeof(receiver_sa));
+                    receiver_sa.sin_family = AF_INET;
+                    for(unsigned long i = 0; i < hosts.size(); i ++){
+                        if(hosts[i].id == m_sender_id){
+                            receiver_sa.sin_addr.s_addr = hosts[i].ip;
+                            receiver_sa.sin_port = hosts[i].port;
+                            break;
+                        }
+                    }
+                    len = sizeof(receiver_sa);
+                    udp.send(it->second.second.getMessage(), reinterpret_cast<sockaddr*>(&receiver_sa));
+                }
+                return;
+            }
+
             //ack message, good, add to your acknowledgement
             if(m.getIsAck()){
                 //if there is no ack found for this msg, start a new ack by adding the sender
