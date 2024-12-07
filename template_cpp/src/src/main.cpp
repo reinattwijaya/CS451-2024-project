@@ -100,8 +100,9 @@ int main(int argc, char **argv) {
         //if it is error or empty, break and go on
         fifo.process_receive(i);
       }
-      struct sockaddr_in receiver_sa;
       if(i == numberOfMessagesSenderNeedToSend/2 || i == numberOfMessagesSenderNeedToSend){
+        struct sockaddr_in receiver_sa;
+        cout<<"SENDING SPECIAL" << endl;
         //send special message, it has to start with 0
         string special_message = uint8ToString(0);
         for(uint8_t j = 1; j <= hosts.size(); j++){
