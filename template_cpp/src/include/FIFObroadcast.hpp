@@ -47,29 +47,29 @@ class FIFOBroadcast{
             process_id(pid), hosts(_hosts), outputFile(outFile), udp(ip, port){
         }
 
-        void process_receive(uint32_t &the_i){
+        void process_receive(uint32_t the_i){
             struct sockaddr_in sender_sa;
             string recvMessage = udp.receive(reinterpret_cast<sockaddr*>(&sender_sa), &len);
 
             uint8_t temp_sender_id = stringToUInt8(recvMessage.substr(0, 1));
             //special message, special treatment, ignore the rest
             if(temp_sender_id == 0){
-                std::cout << "SPECIAL" << std::endl;
+                //std::cout << "SPECIAL" << std::endl;
                 uint32_t m_last_delivered[150];
-                unsigned int cnt = 0;
+                unsigned int cnt = 1;
                 for(unsigned int i = 1; i < recvMessage.length();){
                     string temp_msg = "";
                     for(unsigned int j = 0; j < 4; j++)
                         temp_msg += recvMessage[i++];
-                    m_last_delivered[cnt] = stringToUInt32(temp_msg);
+                    m_last_delivered[cnt++] = stringToUInt32(temp_msg);
                 }
                 //handle special messages
-                for(uint8_t i = 0; i < cnt; i ++){
-                    do{
+                for(uint8_t i = 1; i < cnt; i ++){
+                    while(++lastDelivered[i] < m_last_delivered[i]){
                         auto it = acks.find(make_pair(i, lastDelivered[i]));
                         if(it == acks.end() || it->second.second.getMessage() == ""){
                             //if no message has been found, send a NACK
-                            Message nack = Message("", process_id, i + 128, lastDelivered[i], 0);
+                            Message nack = Message("", process_id, static_cast<uint8_t>(i + 128), lastDelivered[i], 0);
                             for(unsigned long i = 0; i < hosts.size(); i ++){
                                 memset(&receiver_sa, 0, sizeof(receiver_sa));
                                 receiver_sa.sin_family = AF_INET;
@@ -83,9 +83,9 @@ class FIFOBroadcast{
                         string msgToDeliver = it->second.second.createDeliveredMessage();
                         outputFile << msgToDeliver;
                         it->second.first = static_cast<uint8_t>(hosts.size()/2+1);
-                        lastDelivered[i]++;
                     }
-                    while(lastDelivered[i] < m_last_delivered[i]);
+                    
+                    lastDelivered[i]--;
                 }
                 return;
             }
@@ -107,20 +107,30 @@ class FIFOBroadcast{
 
             //another special case, just make sure to reset back the counter to that specific process if 
             if(m.getIsNAck()){
-                if(m_process_id == process_id){
-                    the_i = m_seq_num-1;
+                memset(&receiver_sa, 0, sizeof(receiver_sa));
+                receiver_sa.sin_family = AF_INET;
+                for(unsigned long i = 0; i < hosts.size(); i ++){
+                    if(hosts[i].id == m_sender_id){
+                        receiver_sa.sin_addr.s_addr = hosts[i].ip;
+                        receiver_sa.sin_port = hosts[i].port;
+                        break;
+                    }
                 }
-                if(it != acks.end()){
-                    memset(&receiver_sa, 0, sizeof(receiver_sa));
-                    receiver_sa.sin_family = AF_INET;
-                    for(unsigned long i = 0; i < hosts.size(); i ++){
-                        if(hosts[i].id == m_sender_id){
-                            receiver_sa.sin_addr.s_addr = hosts[i].ip;
-                            receiver_sa.sin_port = hosts[i].port;
-                            break;
+                len = sizeof(receiver_sa);
+                if(m_process_id == process_id){
+                    string message = "";
+                    uint32_t currentSeqNum = m_seq_num+1;
+                    for(uint32_t i = (m_seq_num*8)+1; i <= the_i; i ++){
+                        message += uint32ToString(i);
+                        if (i % 8 == 0 || i == the_i){
+                            Message message_to_send = Message(message, process_id, process_id, currentSeqNum, false);
+                            udp.send(message_to_send.getMessage(), reinterpret_cast<sockaddr*>(&receiver_sa));
+                            currentSeqNum++;
+                            message = "";
                         }
                     }
-                    len = sizeof(receiver_sa);
+                }
+                else if(it != acks.end()){
                     udp.send(it->second.second.getMessage(), reinterpret_cast<sockaddr*>(&receiver_sa));
                 }
                 return;
@@ -190,11 +200,11 @@ class FIFOBroadcast{
             }
             uint32_t curSeqNum = m_seq_num;
             //std::cout << "THE CURRENT NUMACK: " << static_cast<unsigned int>(numAck) << ' ' << static_cast<unsigned int>(hostCutOff) << std::endl;
-            //std::cout << "THE CUR SEQ NUM: " << curSeqNum << ' ' << lastDelivered[m_process_id] << std::endl;
+            //std::cout << "PROCESSS: " << static_cast<unsigned int>(m_process_id) << " THE CUR SEQ NUM: " << curSeqNum << ' ' << lastDelivered[m_process_id] << std::endl;
             if(numAck > hostCutOff && lastDelivered[m_process_id]+1 == curSeqNum){
                 string msgToDeliver = it->second.second.createDeliveredMessage();
-                //std::cout << "THE MESSAGE: " << msgToDeliver << std::endl;
                 while(numAck > hostCutOff && msgToDeliver != ""){
+                    //std::cout << "THE MESSAGE: " << msgToDeliver << " OF SEQ NUM: " << curSeqNum << std::endl;
                     outputFile << msgToDeliver;
                     it = acks.find(make_pair(m.getProcessId(), ++curSeqNum));
                     if(it == acks.end())

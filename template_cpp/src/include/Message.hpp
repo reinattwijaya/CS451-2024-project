@@ -68,7 +68,7 @@ class Message{
             process_id = stringToUInt8(m.substr(1, 1));
             if(process_id == 0 || process_id > 128){
                 isNAck = true;
-                process_id -= 128;
+                process_id = static_cast<uint8_t>(process_id - 128);
             }
             else
                 isNAck = false;
