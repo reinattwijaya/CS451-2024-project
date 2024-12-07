@@ -54,6 +54,7 @@ class FIFOBroadcast{
             uint8_t temp_sender_id = stringToUInt8(recvMessage.substr(0, 1));
             //special message, special treatment, ignore the rest
             if(temp_sender_id == 0){
+                std::cout << "SPECIAL" << std::endl;
                 uint32_t m_last_delivered[150];
                 unsigned int cnt = 0;
                 for(unsigned int i = 1; i < recvMessage.length();){
@@ -81,7 +82,7 @@ class FIFOBroadcast{
                         }
                         string msgToDeliver = it->second.second.createDeliveredMessage();
                         outputFile << msgToDeliver;
-                        it->second.first = static_cast<uint8_t>(hosts.size()/2)+1;
+                        it->second.first = static_cast<uint8_t>(hosts.size()/2+1);
                         lastDelivered[i]++;
                     }
                     while(lastDelivered[i] < m_last_delivered[i]);
