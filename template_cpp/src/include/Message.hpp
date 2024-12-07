@@ -34,10 +34,21 @@ uint32_t stringToUInt32(string s){
 class Message{
     private:
         // we can add metadata to know the type of the message, but right now just having this is fine since we only send integers
+        /*
+        special message -> make process_id 0
+        this is to indicate I need this message to be delivered, this is the highest I got
+        basically a NOACK message
+        we will send a NOACK message when we receive a message that is higher than the highest we have received by x seq number
+        NOACK message will be sent to all processes to see whether they can send the message to us
+        */
+        /*
+        special message 2 -> make sender_id 0
+        this message contains all the messages that have been delivered by the process
+        */
         uint8_t sender_id;
         uint8_t process_id;
         uint32_t sequence_number;
-        bool isAck;
+        bool isAck, isNAck;
         string message;
     public:
         Message(){
@@ -45,6 +56,7 @@ class Message{
             process_id = 0;
             sequence_number = 0;
             isAck = false;
+            isNAck = false;
             message = "";
         }
         Message(string m): message(m){
@@ -54,6 +66,10 @@ class Message{
                 isAck = false;
             sender_id = stringToUInt8(m.substr(0, 1));
             process_id = stringToUInt8(m.substr(1, 1));
+            if(process_id == 0)
+                isNAck = true;
+            else
+                isNAck = false;
             sequence_number = stringToUInt32(m.substr(2, 4));
         }
         Message(string m, uint8_t sid, uint8_t pid, uint32_t seq_num, bool _isAck): sender_id(sid), process_id(pid), sequence_number(seq_num), isAck(_isAck){

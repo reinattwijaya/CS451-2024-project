@@ -46,10 +46,10 @@ int main(int argc, char **argv) {
 
   std::ifstream configFile(parser.configPath());
   outputFile.open(parser.outputPath());
-  unsigned long numberOfMessagesSenderNeedToSend = 0, receiverIdx = 0; 
+  unsigned long numberOfMessagesSenderNeedToSend = 0; 
 
   if (configFile.is_open()) {
-    configFile >> numberOfMessagesSenderNeedToSend >> receiverIdx;
+    configFile >> numberOfMessagesSenderNeedToSend;
     configFile.close();
   }
 
@@ -71,7 +71,6 @@ int main(int argc, char **argv) {
   //send messages and periodically wait for messages
   string message = "", broadCastMessage = "";
   bool done = false;
-  int time = 0;
   while(true){
     uint32_t counter = 1;
     for(uint32_t i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
@@ -92,19 +91,32 @@ int main(int argc, char **argv) {
         fd_set socks;
         struct timeval t;
         socklen_t len;
-        t.tv_sec = time/1000000;
-        t.tv_usec = time%1000000;
+        t.tv_sec = 0;
+        t.tv_usec = 0;
         FD_ZERO(&socks);
         FD_SET(fifo.udp.getSockfd(), &socks);
         int select_result = select(fifo.udp.getSockfd() + 1, &socks, NULL, NULL, &t);
         //cout << "SELECT RESULT: " << select_result << endl;
         //if it is error or empty, break and go on
-        if(select_result <= 0){
-          if(time < 1000000)
-            time *= 2;
-          break;
-        }
         fifo.process_receive();
+      }
+      struct sockaddr_in receiver_sa;
+      if(i == numberOfMessagesSenderNeedToSend/2 || i == numberOfMessagesSenderNeedToSend){
+        //send special message, it has to start with 0
+        string special_message = uint8ToString(0);
+        for(uint8_t j = 1; j <= hosts.size(); j++){
+          special_message += uint32ToString(fifo.lastDelivered[j]);
+        }
+        for(unsigned long i = 0; i < hosts.size(); i ++){
+          if(hosts[i].id == process_host_id)
+            continue;
+          memset(&receiver_sa, 0, sizeof(receiver_sa));
+          receiver_sa.sin_family = AF_INET;
+          receiver_sa.sin_addr.s_addr = hosts[i].ip;
+          receiver_sa.sin_port = hosts[i].port;
+          socklen_t len = sizeof(receiver_sa);
+          fifo.udp.send(special_message, reinterpret_cast<sockaddr*>(&receiver_sa));
+        }
       }
     }
     done = true;

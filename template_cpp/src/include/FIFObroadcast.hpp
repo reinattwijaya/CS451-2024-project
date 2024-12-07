@@ -33,10 +33,10 @@ class FIFOBroadcast{
         std::map<std::pair<uint8_t, uint32_t>, std::pair<uint8_t, Message>> acks;
         //p_acks[process_id][sender_id][sequence_number]
         std::map<std::pair<uint8_t, std::pair<uint8_t, uint32_t>>, bool> p_acks;
-        std::map<uint8_t, uint32_t> lastDelivered;
         std::vector<Parser::Host> hosts;
         std::ofstream& outputFile;
     public:
+        std::map<uint8_t, uint32_t> lastDelivered;
         UDP udp;
         /*
         FIFO broadcast has two types of function:
@@ -51,6 +51,44 @@ class FIFOBroadcast{
             struct sockaddr_in sender_sa;
             string recvMessage = udp.receive(reinterpret_cast<sockaddr*>(&sender_sa), &len);
 
+            uint8_t temp_sender_id = stringToUInt8(recvMessage.substr(0, 1));
+            //special message, special treatment, ignore the rest
+            if(temp_sender_id == 0){
+                uint32_t m_last_delivered[150];
+                unsigned int cnt = 0;
+                for(unsigned int i = 1; i < recvMessage.length();){
+                    string temp_msg = "";
+                    for(unsigned int j = 0; j < 4; j++)
+                        temp_msg += recvMessage[i++];
+                    m_last_delivered[cnt] = stringToUInt32(temp_msg);
+                }
+                //handle special messages
+                for(uint8_t i = 0; i < cnt; i ++){
+                    do{
+                        auto it = acks.find(make_pair(i, lastDelivered[i]));
+                        if(it == acks.end() || it->second.second.getMessage() == ""){
+                            //if no message has been found, send a NACK
+                            Message nack = Message("", process_id, i, lastDelivered[i], 0);
+                            for(unsigned long i = 0; i < hosts.size(); i ++){
+                                memset(&receiver_sa, 0, sizeof(receiver_sa));
+                                receiver_sa.sin_family = AF_INET;
+                                receiver_sa.sin_addr.s_addr = hosts[i].ip;
+                                receiver_sa.sin_port = hosts[i].port;
+                                len = sizeof(receiver_sa);
+                                udp.send(nack.getMessage(), reinterpret_cast<sockaddr*>(&receiver_sa));
+                            }
+                            break;
+                        }
+                        string msgToDeliver = it->second.second.createDeliveredMessage();
+                        outputFile << msgToDeliver;
+                        it->second.first = static_cast<uint8_t>(hosts.size()/2)+1;
+                        lastDelivered[i]++;
+                    }
+                    while(lastDelivered[i] < m_last_delivered[i]);
+                }
+                return;
+            }
+
             Message m = Message(recvMessage);
             //std::cout << "RECEIVING (1-ACK,0-NOT): " << m.getIsAck() << " FROM THE PROCESS " << static_cast<unsigned int>(m.getSenderId()) << " OF A MESSAGE FROM " << static_cast<unsigned int>(m.getProcessId()) << " WITH SEQ NUM: " << static_cast<unsigned int>(m.getSequenceNumber()) << std::endl;
             
@@ -62,6 +100,9 @@ class FIFOBroadcast{
             uint8_t numAck = 0, m_sender_id = m.getSenderId(), m_process_id = m.getProcessId();
             uint32_t m_seq_num = m.getSequenceNumber();
             uint8_t hostCutOff = static_cast<uint8_t>(hosts.size()/2);
+            //decreases the number of broadcasts by around 10%, dk if it is worth it but it also reduces some performance so just comment
+            // if(lastDelivered[m_process_id] >= m_seq_num)
+            //     return;
             //ack message, good, add to your acknowledgement
             if(m.getIsAck()){
                 //if there is no ack found for this msg, start a new ack by adding the sender
@@ -161,7 +202,7 @@ class FIFOBroadcast{
                 receiver_sa.sin_addr.s_addr = hosts[i].ip;
                 receiver_sa.sin_port = hosts[i].port;
                 len = sizeof(receiver_sa);
-                udp.send(message, reinterpret_cast<sockaddr*>(&receiver_sa));
+                udp.send(message.getMessage(), reinterpret_cast<sockaddr*>(&receiver_sa));
             }
         }
 };

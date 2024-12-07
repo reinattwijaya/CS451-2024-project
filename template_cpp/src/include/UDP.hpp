@@ -36,11 +36,10 @@ class UDP{
             }
         }
         //the sender uses a random port assigned by the OS
-        void send(Message message, const sockaddr* receiver_sa){
-            string fullMessage = message.getMessage();
+        void send(string message, const sockaddr* receiver_sa){
             //std::cout << message.createDeliveredMessage() << std::endl;
             //std::cout << "SEQ: " << static_cast<unsigned int>(message.getSequenceNumber()) << std::endl;
-            ssize_t bytes_sent = sendto(sender_sockfd, fullMessage.data(), fullMessage.size(), 0, receiver_sa, sizeof(*receiver_sa));
+            ssize_t bytes_sent = sendto(sender_sockfd, message.data(), message.size(), 0, receiver_sa, sizeof(*receiver_sa));
             if(bytes_sent < 0){
                 std::cerr << "SEND FAILED" << std::endl;
             }else{
@@ -50,7 +49,7 @@ class UDP{
         //receive to the port binded to the UDP object
         string receive(sockaddr* sender_sa, socklen_t* len){
             ssize_t n = recvfrom(sockfd, buffer, 1024, MSG_WAITALL, sender_sa, len);
-            string receivedData(buffer, n);
+            string receivedData(buffer, static_cast<unsigned long>(n));
             return receivedData;
         }
         int getSockfd(){
