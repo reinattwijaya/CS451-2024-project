@@ -2,6 +2,7 @@
 #include <iostream>
 #include <thread>
 #include <map>
+#include <algorithm>
 
 #include <FIFObroadcast.hpp>
 #include "parser.hpp"
@@ -11,6 +12,8 @@
 
 using std::cout;
 using std::endl;
+using std::max;
+using std::min;
 
 //a bit dangerous, but we need to write to the output file from the signal handler
 std::ofstream outputFile;
@@ -46,7 +49,7 @@ int main(int argc, char **argv) {
 
   std::ifstream configFile(parser.configPath());
   outputFile.open(parser.outputPath());
-  unsigned long numberOfMessagesSenderNeedToSend = 0; 
+  uint32_t numberOfMessagesSenderNeedToSend = 0; 
 
   if (configFile.is_open()) {
     configFile >> numberOfMessagesSenderNeedToSend;
@@ -70,29 +73,33 @@ int main(int argc, char **argv) {
 
   //send messages and periodically wait for messages
   string message = "", broadCastMessage = "";
-  bool done = false;
+  int time = 0, broadcastTime = 0;
+  uint32_t maxSend = 4000000, maxCount = 1;
+  //only increase maxSend if all processes have finished 
   while(true){
     uint32_t counter = 1;
-    for(uint32_t i = 1; i <= numberOfMessagesSenderNeedToSend; i++){
+    for(uint32_t i = 1; i <= min(maxSend, numberOfMessagesSenderNeedToSend); i++){
       message += uint32ToString(i);
-      if(!done)
+      if(maxCount <= counter)
           broadCastMessage += "b " + std::to_string(i) + '\n';
       if (i % 8 == 0 || i == numberOfMessagesSenderNeedToSend){
-        if(!done)
+        if(maxCount <= counter)
             outputFile << broadCastMessage;
         Message message_to_send = Message(message, process_host_id, process_host_id, counter, false);
         fifo.broadcast(message_to_send);
+        if(maxCount <= counter){
+            broadCastMessage = "";
+            maxCount++;
+        }
         counter++;
         message = "";
-        if(!done)
-            broadCastMessage = "";
       }
       while(i%8 == 0 || i == numberOfMessagesSenderNeedToSend){
         fd_set socks;
         struct timeval t;
         socklen_t len;
-        t.tv_sec = 0;
-        t.tv_usec = 0;
+        t.tv_sec = time/1000000;
+        t.tv_usec = time%1000000;
         FD_ZERO(&socks);
         FD_SET(fifo.udp.getSockfd(), &socks);
         int select_result = select(fifo.udp.getSockfd() + 1, &socks, NULL, NULL, &t);
@@ -103,6 +110,7 @@ int main(int argc, char **argv) {
         fifo.process_receive(i);
       }
       if(i == numberOfMessagesSenderNeedToSend/2 || i == numberOfMessagesSenderNeedToSend){
+        //cout << "SENDING SPECIAL" << endl;
         struct sockaddr_in receiver_sa;
         //send special message, it has to start with 0
         string special_message = uint8ToString(0);
@@ -121,7 +129,23 @@ int main(int argc, char **argv) {
         }
       }
     }
-    done = true;
+    if(numberOfMessagesSenderNeedToSend > maxSend){
+      uint32_t lowest_seq = 2147483647;
+      //if you have delivered a lot, broadcast more instead of delivering and vice versa
+      for(uint8_t j = 1; j <= hosts.size(); j ++){
+        lowest_seq = min(lowest_seq, fifo.lastDelivered[j]);
+      }
+      maxSend = lowest_seq*8 + 4000000;
+      maxSend = maxSend - (maxSend % 8);
+    }
+    //broadcastTime++;
+    //if(broadcastTime %4 == 0){
+      //time *= 2;
+      //struct timeval tv;
+      //tv.tv_sec = time/1000000;
+      //tv.tv_usec = time%1000000;
+      //setsockopt(fifo.udp.getSockfd(), SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&tv), sizeof tv);
+    //}
   }
 
   return 0;
