@@ -8,7 +8,7 @@ using std::vector;
 
 string uint32ToString(uint32_t n);
 string uint8ToString(uint8_t n);
-uint8_t stringToUInt8(string s);
+uint8_t stringToUInt8(char s);
 uint32_t stringToUInt32(string s);
 
 string uint32ToString(uint32_t n){

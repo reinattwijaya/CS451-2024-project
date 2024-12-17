@@ -58,7 +58,7 @@ class LatticeAgreement{
                     len = sizeof(receiver_sa);
                     udp.send(message.getMessage(), reinterpret_cast<sockaddr*>(&receiver_sa));
                 }
-                sleep(1);
+                //sleep(1);
             }
         }
 

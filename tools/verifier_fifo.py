@@ -16,6 +16,14 @@ for i in range(1, N+1):
     max_broadcasted[i] = 1
 
 for i in range(1, N+1):
+    with open(file_loc + "proc" + int_to_str(i) + ".stdout", "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            if "NACK" in line:
+                 print("THERE IS A NACK")
+                 break
+
+for i in range(1, N+1):
     for j in range(1, N+1):
         max_delivered[(i, j)] = 1
     with open(file_loc + "proc" + int_to_str(i) + ".output", "r") as f:
@@ -50,6 +58,7 @@ for i in range(1, N+1):
     for key in all_delivered:
         if(max_delivered[(i, key[0])] < key[1]):
             print("Error in proc" + int_to_str(i) + ".output" + ": MISSING DELIVERY OF " + str(key[1]) + " FROM " + str(key[0]))
+            break
 
     print(i, "has broadcasted", max_broadcasted[i], "and delivered", msg_delivered)
 
