@@ -10,7 +10,7 @@ class UDP{
     private:
         int sockfd, sender_sockfd;
         struct sockaddr_in process_sa;
-        char buffer[1024];
+        char buffer[4096];
     public:
         //create a udp socket and bind it to the given ip and port
         UDP(in_addr_t ip, in_port_t port){
@@ -41,7 +41,7 @@ class UDP{
         }
         //the sender uses a random port assigned by the OS
         void send(string message, const sockaddr* receiver_sa){
-            //std::cout << message.createDeliveredMessage() << std::endl;
+            // std::cout << message << std::endl;
             //std::cout << "SEQ: " << static_cast<unsigned int>(message.getSequenceNumber()) << std::endl;
             ssize_t bytes_sent = sendto(sender_sockfd, message.data(), message.size(), 0, receiver_sa, sizeof(*receiver_sa));
             if(bytes_sent < 0){

@@ -1,7 +1,10 @@
 #pragma once
 #include <string>
+#include <vector>
+#include <iostream>
 
 using std::string;
+using std::vector;
 
 string uint32ToString(uint32_t n);
 string uint8ToString(uint8_t n);
@@ -21,8 +24,8 @@ string uint8ToString(uint8_t n){
     ret += static_cast<char>(n & 0xFF);
     return ret;
 }
-uint8_t stringToUInt8(string s){
-    return static_cast<uint8_t>(s[0]);
+uint8_t stringToUInt8(char s){
+    return static_cast<uint8_t>(s);
 }
 uint32_t stringToUInt32(string s){
     return (static_cast<uint32_t>(static_cast<unsigned char>(s[0])) << 24) |
@@ -34,68 +37,48 @@ uint32_t stringToUInt32(string s){
 class Message{
     private:
         // we can add metadata to know the type of the message, but right now just having this is fine since we only send integers
-        /*
-        special message -> make process_id 0
-        this is to indicate I need this message to be delivered, this is the highest I got
-        basically a NOACK message
-        we will send a NOACK message when we receive a message that is higher than the highest we have received by x seq number
-        NOACK message will be sent to all processes to see whether they can send the message to us
-        */
-        /*
-        special message 2 -> make sender_id 0
-        this message contains all the messages that have been delivered by the process
-        */
-        uint8_t sender_id;
-        uint8_t process_id;
-        uint32_t sequence_number;
-        bool isAck, isNAck;
+        // message type -> 0: proposal, 1: ack, 2: nack
+        uint8_t message_type, sender_id;
+        uint32_t sequence_number, active_proposal_number;
         string message;
     public:
+        vector<uint32_t> proposal;
         Message(){
+            message_type = 0;
             sender_id = 0;
-            process_id = 0;
             sequence_number = 0;
-            isAck = false;
-            isNAck = false;
+            active_proposal_number = 0;
             message = "";
         }
         Message(string m): message(m){
-            if(m.length() <= 6)
-                isAck = true;
-            else
-                isAck = false;
-            sender_id = stringToUInt8(m.substr(0, 1));
-            process_id = stringToUInt8(m.substr(1, 1));
-            if(process_id == 0 || process_id > 128){
-                isNAck = true;
-                process_id = static_cast<uint8_t>(process_id - 128);
-            }
-            else
-                isNAck = false;
+            message_type = stringToUInt8(m[0]);
+            sender_id = stringToUInt8(m[1]);
             sequence_number = stringToUInt32(m.substr(2, 4));
+            active_proposal_number = stringToUInt32(m.substr(6, 4));
+            if(message_type != 1){
+                for(uint32_t i = 10; i < m.size(); i += 4){
+                    string temp = "";
+                    for(uint32_t j = 0; j < 4; j ++)
+                        temp += m[i+j];
+                    proposal.push_back(stringToUInt32(temp));
+                }
+            }
         }
-        Message(string m, uint8_t sid, uint8_t pid, uint32_t seq_num, bool _isAck): sender_id(sid), process_id(pid), sequence_number(seq_num), isAck(_isAck){
-            message = uint8ToString(sid) + uint8ToString(pid) + uint32ToString(seq_num) + m;
-        }
-        void changeSenderId(uint8_t new_sid){
-            sender_id = new_sid;
-            message[0] = static_cast<char>(new_sid & 0xFF);
+        Message(uint8_t msg_type, uint8_t sid, uint32_t seq_num, uint32_t active_prop, vector<uint32_t> &prop):
+            message_type(msg_type), sender_id(sid), sequence_number(seq_num), active_proposal_number(active_prop){
+            message = uint8ToString(msg_type) + uint8ToString(sid) + uint32ToString(seq_num) + uint32ToString(active_prop);
+            if(message_type != 1){
+                for(uint32_t i = 0; i < prop.size(); i ++)
+                    message += uint32ToString(prop[i]);
+                proposal.assign(prop.begin(), prop.end());
+            }
         }
         uint32_t getSequenceNumber(){return sequence_number;}
+        bool isAck(){return message_type == 1;}
+        bool isNAck(){return message_type == 2;}
+        bool isProposal(){return message_type == 0;}
         uint8_t getSenderId(){return sender_id;}
-        uint8_t getProcessId(){return process_id;}
-        bool getIsAck(){return isAck;}
-        bool getIsNAck(){return isNAck;}
+        uint32_t getActiveProposalNumber(){return active_proposal_number;}
+
         string getMessage(){return message;}
-        string createDeliveredMessage(){
-            string message_to_deliver = "";
-            for(unsigned int i = 6; i < message.length();){
-                message_to_deliver += "d " + std::to_string(static_cast<unsigned int>(process_id)) + " ";
-                string temp_msg = "";
-                for(unsigned int j = 0; j < 4; j++)
-                    temp_msg += message[i++];
-                message_to_deliver += std::to_string(static_cast<unsigned int>(stringToUInt32(temp_msg))) + '\n';
-            }
-            return message_to_deliver;
-        }
 };
