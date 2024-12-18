@@ -48,7 +48,6 @@ int main(int argc, char **argv) {
   outputFile.open(parser.outputPath());
   uint32_t numberOfProposals = 0, maxProposalSize = 0, maxDistinctElements = 0; 
   vector<vector<uint32_t>> proposals;
-  cout << "start" << endl;
   if (configFile.is_open()) {
     configFile >> numberOfProposals >> maxProposalSize >> maxDistinctElements;
     string line;
@@ -66,12 +65,12 @@ int main(int argc, char **argv) {
     configFile.close();
   }
 
-  cout << numberOfProposals << " " << maxProposalSize << " " << maxDistinctElements << endl;
-  for(uint32_t i = 0; i < numberOfProposals; i ++){
-    for(uint32_t j = 0; j < proposals[i].size(); j ++)
-      cout << proposals[i][j] << " ";
-    cout << endl;
-  }
+  // cout << numberOfProposals << " " << maxProposalSize << " " << maxDistinctElements << endl;
+  // for(uint32_t i = 0; i < numberOfProposals; i ++){
+  //   for(uint32_t j = 0; j < proposals[i].size(); j ++)
+  //     cout << proposals[i][j] << " ";
+  //   cout << endl;
+  // }
 
   auto hosts = parser.hosts();
   string init_ip = "127.0.0.1";

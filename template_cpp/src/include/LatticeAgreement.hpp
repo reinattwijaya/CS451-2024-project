@@ -120,8 +120,7 @@ class LatticeAgreement{
                     // cout << endl;
                     if(isSubset(the_proposal, m.proposal)){
                         //cout << "SEND ACK" << endl;
-                        if(m.getSequenceNumber() >= current_seq_num)
-                            the_proposal.assign(m.proposal.begin(), m.proposal.end());
+                        the_proposal.assign(m.proposal.begin(), m.proposal.end());
                         udp.send(Message(1, process_id, m.getSequenceNumber(), m.getActiveProposalNumber(), 
                             m.proposal).getMessage(), reinterpret_cast<sockaddr*>(&receiver_sa));
                     }else{
@@ -129,12 +128,10 @@ class LatticeAgreement{
                         // for(unsigned int i = 0; i < m.proposal.size(); i ++)
                         //     cout << m.proposal[i] << " ";
                         // cout << endl;
-                        if(m.getSequenceNumber() >= current_seq_num){
-                            vector<uint32_t> new_proposal;
-                            set_union(the_proposal.begin(), the_proposal.end(), 
-                                m.proposal.begin(), m.proposal.end(), back_inserter(new_proposal));
-                            the_proposal.assign(new_proposal.begin(), new_proposal.end());
-                        }
+                        vector<uint32_t> new_proposal;
+                        set_union(the_proposal.begin(), the_proposal.end(), 
+                            m.proposal.begin(), m.proposal.end(), back_inserter(new_proposal));
+                        the_proposal.assign(new_proposal.begin(), new_proposal.end());
                         udp.send(Message(2, process_id, m.getSequenceNumber(), m.getActiveProposalNumber(), 
                             the_proposal).getMessage(), reinterpret_cast<sockaddr*>(&receiver_sa));
                     }
