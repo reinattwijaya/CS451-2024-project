@@ -74,9 +74,45 @@ class LatticeAgreement{
             return includes(b.begin(), b.end(), a.begin(), a.end());
         }
 
-        void receive(){
+        void receive(bool isFirst = false, uint32_t maxDistinctValues = INT32_MAX){
             struct sockaddr_in sender_sa;
             while(true){
+
+                if(isFirst){
+                    if((ack_count[current_seq_num].size() > hosts.size()/2 || proposed_values.size() == maxDistinctValues) && active){
+                        // cout << "DELIVERING" << endl;
+                        outputFile << getDeliveredMessage();
+                        // cout << current_seq_num << ' ' << active_proposal_number << ' ' << getDeliveredMessage() << endl;
+                        delivered_values[current_seq_num] = proposed_values;
+                        active = false;
+                        current_seq_num++;
+                        if (broadcast_thread.joinable()){
+                            is_done.store(!is_done.load());
+                            broadcast_thread.join();
+                        }
+                        return;
+                    }
+
+                    if(nack_count[current_seq_num].size() > 0 && ack_count[current_seq_num].size() + nack_count[current_seq_num].size() > hosts.size()/2 && active){
+                        // cout << "NEW PROPOSAL" << endl;
+                        // for(unsigned int i = 0; i < proposed_values.size(); i ++)
+                        //     cout << proposed_values[i] << " ";
+                        // cout << endl;
+                        active_proposal_number++;
+                        ack_count[current_seq_num].clear();
+                        nack_count[current_seq_num].clear();
+                        ack_count[current_seq_num].insert(process_id);
+                        if (broadcast_thread.joinable()){
+                            is_done.store(!is_done.load());
+                            broadcast_thread.join();
+                        }
+                        broadcast_thread = thread(&LatticeAgreement::broadcast, this, is_done.load(), 
+                                        Message(0, process_id, current_seq_num, active_proposal_number, proposed_values));
+                    }
+
+                    isFirst = false;
+                }
+
                 string recvMessage = udp.receive(reinterpret_cast<sockaddr*>(&sender_sa), &len);
 
                 Message m = Message(recvMessage);
@@ -173,3 +209,9 @@ class LatticeAgreement{
             }
         }
 };
+
+/*
+new improvement:
+1. if we already reached the maximum number of distinct values, just deliver and move on
+2. do a check first before waiting for a message, you might already have everything needed
+*/
