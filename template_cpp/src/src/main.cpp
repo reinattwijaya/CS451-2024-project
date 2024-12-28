@@ -89,10 +89,10 @@ int main(int argc, char **argv) {
 
   for(uint32_t i = 0; i < numberOfProposals; i ++){
     la.propose();
-    la.receive(true, maxDistinctElements);
+    la.receive(maxDistinctElements);
   }
   while(true){
-    la.receive(false, maxDistinctElements);
+    la.receive(maxDistinctElements);
   }
 
   return 0;
