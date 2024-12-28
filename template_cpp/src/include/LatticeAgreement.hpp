@@ -79,7 +79,7 @@ class LatticeAgreement{
             while(true){
 
                 if(isFirst){
-                    if((ack_count[current_seq_num].size() > hosts.size()/2 || proposed_values.size() == maxDistinctValues) && active){
+                    if((ack_count[current_seq_num].size() > hosts.size()/2) && active){
                         // cout << "DELIVERING" << endl;
                         outputFile << getDeliveredMessage();
                         // cout << current_seq_num << ' ' << active_proposal_number << ' ' << getDeliveredMessage() << endl;

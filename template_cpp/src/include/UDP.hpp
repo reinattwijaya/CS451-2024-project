@@ -10,7 +10,7 @@ class UDP{
     private:
         int sockfd, sender_sockfd;
         struct sockaddr_in process_sa;
-        char buffer[4096];
+        char buffer[10240];
     public:
         //create a udp socket and bind it to the given ip and port
         UDP(in_addr_t ip, in_port_t port){
@@ -52,7 +52,7 @@ class UDP{
         }
         //receive to the port binded to the UDP object
         string receive(sockaddr* sender_sa, socklen_t* len){
-            ssize_t n = recvfrom(sockfd, buffer, 1024, MSG_WAITALL, sender_sa, len);
+            ssize_t n = recvfrom(sockfd, buffer, 10240, MSG_WAITALL, sender_sa, len);
             if(n <= 0){
                 if (errno == EAGAIN)
                     return "failed";
