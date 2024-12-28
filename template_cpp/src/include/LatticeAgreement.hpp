@@ -129,19 +129,17 @@ class LatticeAgreement{
                 
                 // cout << "MESSAGE SEQ NUM: " << m.getSequenceNumber() << endl;
 
-                if(m.isAck() && m.getActiveProposalNumber() == active_proposal_number){
+                if(m.isAck() && m.getActiveProposalNumber() == active_proposal_number && m.getSequenceNumber() == current_seq_num){
                     //cout << "GET ACK FROM " << static_cast<unsigned int>(m.getSenderId()) << endl;
                     ack_count[m.getSequenceNumber()].insert(m.getSenderId());
                 }
-                else if (m.isNAck() && m.getActiveProposalNumber() == active_proposal_number){
+                else if (m.isNAck() && m.getActiveProposalNumber() == active_proposal_number && m.getSequenceNumber() == current_seq_num){
                     //cout << "GET NACK FROM " << static_cast<uint32_t>(m.getSenderId()) << endl;
                     nack_count[m.getSequenceNumber()].insert(m.getSenderId());
-                    if(m.getSequenceNumber() >= current_seq_num){
-                        vector<uint32_t> new_proposal;
-                        set_union(the_proposal.begin(), the_proposal.end(), m.proposal.begin(), m.proposal.end(), 
-                            back_inserter(new_proposal));
-                        the_proposal.assign(new_proposal.begin(), new_proposal.end());
-                    }
+                    vector<uint32_t> new_proposal;
+                    set_union(the_proposal.begin(), the_proposal.end(), m.proposal.begin(), m.proposal.end(), 
+                        back_inserter(new_proposal));
+                    the_proposal.assign(new_proposal.begin(), new_proposal.end());
                 }
                 else if (m.isProposal()){
                     //cout << "GET PROPOSAL FROM " << static_cast<uint32_t>(m.getSenderId()) << endl;
@@ -175,7 +173,7 @@ class LatticeAgreement{
 
                 // cout << current_seq_num << ' ' << ack_count[current_seq_num].size() << ' ' << nack_count[current_seq_num].size() << endl;
                 
-                if(ack_count[current_seq_num].size() > hosts.size()/2 && active){
+                if((ack_count[current_seq_num].size() > hosts.size()/2 || proposed_values.size() == maxDistinctValues) && active){
                     // cout << "DELIVERING" << endl;
                     outputFile << getDeliveredMessage();
                     // cout << current_seq_num << ' ' << active_proposal_number << ' ' << getDeliveredMessage() << endl;
